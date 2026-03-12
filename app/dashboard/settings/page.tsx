@@ -119,7 +119,7 @@ export default function SettingsPage() {
               <h2 style={{ fontSize: 15, fontWeight: 700 }}>Profile</h2>
             </div>
             <form onSubmit={handleSave}>
-              <div style={{ display: 'flex', alilgnItems: 'center', gap: 16, marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
                 <div style={{
                   width: 64, height: 64, borderRadius: 4,
                   background: 'rgba(0,245,160,0.12)', border: '2px solid rgba(0,245,160,0.2)',
@@ -195,8 +195,8 @@ export default function SettingsPage() {
                 </p>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
                   {profile.plan === 'starter' ? '5 validations, 50 chats, 10 tasks/month' :
-                   profile.plan === 'growth' ? 'Unlimited validations, 500 chats, 100 tasks/month' :
-                   'Everything + custom agents, SLA, SSO'}
+                    profile.plan === 'growth' ? 'Unlimited validations, 500 chats, 100 tasks/month' :
+                      'Everything + custom agents, SLA, SSO'}
                 </p>
               </div>
               <button className="btn btn-outline" style={{ fontSize: 12 }}>Upgrade Plan</button>

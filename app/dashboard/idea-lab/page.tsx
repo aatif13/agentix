@@ -226,7 +226,11 @@ export default function IdeaLabPage() {
                       border: `1px solid ${activeIdea?._id === idea._id ? 'rgba(0,245,160,0.3)' : 'var(--border)'}`,
                       borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s',
                     }}>
-                      <StatusBadge status={idea.status as 'pending' | 'analyzing' | 'complete'} />
+                      <StatusBadge status={
+                        idea.status === 'pending' ? 'queued' :
+                        idea.status === 'analyzing' ? 'running' :
+                        idea.status === 'complete' ? 'completed' : 'queued'
+                      } />
                       <span style={{ fontSize: 13, fontWeight: 500 }}>{idea.ideaTitle}</span>
                     </button>
                   ))}

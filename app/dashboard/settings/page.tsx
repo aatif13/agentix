@@ -222,7 +222,7 @@ export default function SettingsPage() {
                   <button
                     onClick={() => setToggles(prev => ({ ...prev, [int.name]: !prev[int.name] }))}
                     style={{
-                      width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
+                      width: 44, height: 24, borderRadius: 12, cursor: 'pointer',
                       background: toggles[int.name] ? 'var(--color-green)' : 'var(--elevated)',
                       border: `1px solid ${toggles[int.name] ? 'var(--color-green)' : 'var(--border)'}`,
                       transition: 'all 0.2s', position: 'relative',

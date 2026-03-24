@@ -49,25 +49,25 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === 'google') {
         try {
           await connectDB()
-          
+
           if (!user.email) return false
-          
-          const existing = await User.findOne({ 
-            email: user.email.toLowerCase() 
+
+          const existing = await User.findOne({
+            email: user.email.toLowerCase()
           })
-          
+
           if (!existing) {
             await User.create({
               name: user.name || 'User',
               email: user.email.toLowerCase(),
-              password: '',
+              // password: '',
               avatar: user.image || '',
               plan: 'starter',
               startupName: '',
               startupIdea: ''
             })
           }
-          
+
           return true
         } catch (error) {
           console.error('Google signIn error:', error)
@@ -80,8 +80,8 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === 'google' || !token.id) {
         try {
           await connectDB()
-          const dbUser = await User.findOne({ 
-            email: token.email?.toLowerCase() 
+          const dbUser = await User.findOne({
+            email: token.email?.toLowerCase()
           })
           if (dbUser) {
             token.id = dbUser._id.toString()

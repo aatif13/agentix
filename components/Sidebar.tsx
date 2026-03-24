@@ -21,15 +21,14 @@ import {
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/dashboard/idea-lab', label: 'Idea Lab', icon: Lightbulb },
-  { href: '/dashboard/tasks', label: 'Build Studio', icon: Code2 },
-  { href: '/dashboard/tasks', label: 'Growth Engine', icon: TrendingUp, disabled: true },
-  { href: '/dashboard/tasks', label: 'Funding Hub', icon: DollarSign, disabled: true },
-  { href: '/dashboard/tasks', label: 'Legal Desk', icon: Scale, disabled: true },
-  { href: '/dashboard/tasks', label: 'Analytics', icon: BarChart3, disabled: true },
+  { href: '/dashboard/build-studio', label: 'Build Studio', icon: Code2 },
+  { href: '/dashboard/growth', label: 'Growth Engine', icon: TrendingUp, disabled: true },
+  { href: '/dashboard/funding', label: 'Funding Hub', icon: DollarSign, disabled: true },
+  { href: '/dashboard/legal', label: 'Legal Desk', icon: Scale, disabled: true },
+  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3, disabled: true },
   { href: '/dashboard/chat', label: 'AI Chat', icon: MessageSquare },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ]
-
 const planColors: Record<string, string> = {
   starter: 'var(--color-cyan)',
   growth: 'var(--color-purple)',
@@ -57,7 +56,6 @@ export default function Sidebar() {
         {/* Nav */}
         <nav className="sidebar-nav">
           {navItems.map((item) => {
-            if (item.disabled) return null
             const Icon = item.icon
             const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
             return (
@@ -65,6 +63,7 @@ export default function Sidebar() {
                 key={item.label}
                 href={item.href}
                 className={`nav-item ${isActive ? 'nav-item-active' : ''}`}
+                style={item.disabled ? { opacity: 0.4, pointerEvents: 'none' } : {}}
               >
                 <Icon size={18} />
                 <span>{item.label}</span>

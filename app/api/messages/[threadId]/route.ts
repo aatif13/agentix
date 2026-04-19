@@ -7,14 +7,17 @@ import MessageThread from '@/models/MessageThread'
 import Notification from '@/models/Notification'
 import mongoose from 'mongoose'
 
-export async function GET(req: Request, { params }: { params: { threadId: string } }) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ threadId: string }> }
+) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { threadId } = params
+    const { threadId } = await params  // ← added await
 
     await connectDB()
 
@@ -44,14 +47,17 @@ export async function GET(req: Request, { params }: { params: { threadId: string
   }
 }
 
-export async function POST(req: Request, { params }: { params: { threadId: string } }) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ threadId: string }> }
+) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { threadId } = params
+    const { threadId } = await params  // ← added await
     const { content } = await req.json()
 
     if (!content?.trim()) {

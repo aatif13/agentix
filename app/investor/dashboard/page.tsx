@@ -3,8 +3,8 @@
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
-import { 
-  Building2, Bookmark, LayoutGrid, Sparkles, ArrowRight, TrendingUp, Star, Zap, 
+import {
+  Building2, Bookmark, LayoutGrid, Sparkles, ArrowRight, TrendingUp, Star, Zap,
   Rocket, DollarSign, Target, SlidersHorizontal, Search, Check, BookmarkCheck, BookmarkPlus, ArrowUpRight, X, Eye
 } from 'lucide-react'
 import TopBar from '@/components/TopBar'
@@ -41,8 +41,8 @@ const ReadinessRing = ({ score, size = 32 }: { score: number; size?: number }) =
   return (
     <div style={{ position: 'relative', width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--border)" strokeWidth={2.5} />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={2.5}
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={2.5} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={2.5}
           strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
           style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
       </svg>
@@ -73,20 +73,20 @@ export default function InvestorDashboardPage() {
         ])
         const statsData = await statsRes.json()
         const pitchesData = await pitchesRes.json()
-        
+
         setStats(statsData)
         const pitches = pitchesData.pitches || []
         setAllPitches(pitches)
-        
+
         // Filter: Last 7 days, top 3 by score
         const sevenDaysAgo = new Date()
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-        
+
         const top3 = [...pitches]
           .filter((p: Pitch) => new Date(p.createdAt) >= sevenDaysAgo)
           .sort((a: Pitch, b: Pitch) => (b.readinessScore?.score || 0) - (a.readinessScore?.score || 0))
           .slice(0, 3)
-          
+
         setFeatured(top3)
       } catch (e) {
         console.error(e)
@@ -121,7 +121,7 @@ export default function InvestorDashboardPage() {
         body: JSON.stringify({ pitchId: pitch._id }),
       })
       if (res.ok) {
-        setAllPitches(prev => prev.map(p => 
+        setAllPitches(prev => prev.map(p =>
           p._id === pitch._id ? { ...p, isWatchlisted: !p.isWatchlisted } : p
         ))
       }
@@ -139,7 +139,7 @@ export default function InvestorDashboardPage() {
   return (
     <>
       <div className="dashboard-content" style={{ paddingTop: 40 }}>
-        
+
         {/* Personalized Header */}
         <div style={{ marginBottom: 40 }}>
           <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 8, color: 'var(--text-primary)' }}>
@@ -168,16 +168,16 @@ export default function InvestorDashboardPage() {
               <div style={{ width: 4, height: 18, background: '#FFD700', borderRadius: 2 }} />
               <h2 style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em' }}>FEATURED THIS WEEK</h2>
             </div>
-            <div style={{ 
-              display: 'flex', gap: 20, overflowX: 'auto', paddingBottom: 10, 
-              paddingRight: 20, maskImage: 'linear-gradient(to right, black 90%, transparent)' 
+            <div style={{
+              display: 'flex', gap: 20, overflowX: 'auto', paddingBottom: 10,
+              paddingRight: 20, maskImage: 'linear-gradient(to right, black 90%, transparent)'
             }}>
               {featured.map(pitch => (
-                <Link 
-                  key={pitch._id} 
+                <Link
+                  key={pitch._id}
                   href={`/investor/startup/${pitch._id}`}
-                  style={{ 
-                    flex: '0 0 340px', background: 'var(--surface)', border: '1px solid #FFD70040', 
+                  style={{
+                    flex: '0 0 340px', background: 'var(--surface)', border: '1px solid #FFD70040',
                     borderRadius: 12, padding: '24px', textDecoration: 'none', position: 'relative',
                     boxShadow: '0 0 25px rgba(255, 215, 0, 0.08)', transition: 'transform 0.2s ease'
                   }}
@@ -191,17 +191,17 @@ export default function InvestorDashboardPage() {
                     <Star size={10} style={{ color: '#FFD700' }} fill="#FFD700" />
                     <span style={{ fontSize: 9, fontWeight: 800, color: '#FFD700', fontFamily: 'Space Mono' }}>TOP RATED</span>
                   </div>
-                  
+
                   <span style={{
                     display: 'inline-block', padding: '2px 8px', borderRadius: 4, background: 'var(--elevated)',
                     fontSize: 9, fontFamily: 'Space Mono', color: 'var(--text-muted)', marginBottom: 12, border: '1px solid var(--border)'
                   }}>
                     {pitch.industry || 'STARTUP'}
                   </span>
-                  
+
                   <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>{pitch.startupName}</h3>
                   <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 20, height: 40, overflow: 'hidden' }}>{pitch.tagline}</p>
-                  
+
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px solid var(--border)', paddingTop: 16 }}>
                     <div>
                       <p style={{ fontSize: 9, fontFamily: 'Space Mono', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Readiness Score</p>
@@ -223,10 +223,10 @@ export default function InvestorDashboardPage() {
 
         {/* Sector Heatmap */}
         {!loading && (
-          <SectorHeatmap 
-            pitches={allPitches} 
-            currentIndustry={industryFilter} 
-            onSectorClick={setIndustryFilter} 
+          <SectorHeatmap
+            pitches={allPitches}
+            currentIndustry={industryFilter}
+            onSectorClick={setIndustryFilter}
           />
         )}
 
@@ -242,12 +242,12 @@ export default function InvestorDashboardPage() {
             </div>
 
             {/* Filter Bar */}
-            <div style={{ 
-              display: 'flex', gap: 16, alignItems: 'center', background: 'var(--surface)', 
+            <div style={{
+              display: 'flex', gap: 16, alignItems: 'center', background: 'var(--surface)',
               padding: '12px 20px', borderRadius: 12, border: '1px solid var(--border)', flexWrap: 'wrap'
             }}>
               {/* Stage Pills */}
-              <div style={{ display: 'flex', background: 'var(--elevated)', p: 4, borderRadius: 8, padding: 3 }}>
+              <div style={{ display: 'flex', background: 'var(--elevated)', borderRadius: 8, padding: 3 }}>
                 {['All', 'Idea', 'MVP', 'Revenue', 'Scaling'].map(s => (
                   <button
                     key={s}
@@ -269,8 +269,8 @@ export default function InvestorDashboardPage() {
               {/* Industry Dropdown */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <LayoutGrid size={14} style={{ color: 'var(--text-muted)' }} />
-                <select 
-                  value={industryFilter} 
+                <select
+                  value={industryFilter}
                   onChange={e => setIndustryFilter(e.target.value)}
                   style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, outline: 'none', cursor: 'pointer' }}
                 >
@@ -288,14 +288,14 @@ export default function InvestorDashboardPage() {
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Space Mono' }}>FUNDING ASK</span>
-                    <span style={{ fontSize: 10, color: 'var(--color-green)', fontWeight: 700 }}>UP TO ${maxFunding === 1000000 ? '1M+' : (maxFunding/1000).toString() + 'k'}</span>
+                    <span style={{ fontSize: 10, color: 'var(--color-green)', fontWeight: 700 }}>UP TO ${maxFunding === 1000000 ? '1M+' : (maxFunding / 1000).toString() + 'k'}</span>
                   </div>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="1000000" 
-                    step="50000" 
-                    value={maxFunding} 
+                  <input
+                    type="range"
+                    min="0"
+                    max="1000000"
+                    step="50000"
+                    value={maxFunding}
                     onChange={e => setMaxFunding(parseInt(e.target.value))}
                     style={{ width: '100%', accentColor: 'var(--color-green)', height: 4, cursor: 'pointer' }}
                   />
@@ -306,9 +306,9 @@ export default function InvestorDashboardPage() {
 
           {/* Grid */}
           {loading ? (
-             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
-               {Array.from({ length: 6 }).map((_, i) => <div key={i} className="card" style={{ height: 260 }}><LoadingSkeleton type="text" count={5} /></div>)}
-             </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+              {Array.from({ length: 6 }).map((_, i) => <div key={i} className="card" style={{ height: 260 }}><LoadingSkeleton type="text" count={5} /></div>)}
+            </div>
           ) : filteredPitches.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--surface)', borderRadius: 12, border: '1px dashed var(--border)' }}>
               <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>No startups matched your current filters.</p>
@@ -338,7 +338,7 @@ export default function InvestorDashboardPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16, height: 40, overflow: 'hidden' }}>{pitch.tagline}</p>
 
                   <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -358,10 +358,10 @@ export default function InvestorDashboardPage() {
                     <button
                       onClick={() => toggleWatchlist(pitch)}
                       disabled={watchlistLoading === pitch._id}
-                      style={{ 
-                        padding: '9px 12px', background: pitch.isWatchlisted ? 'rgba(0,245,160,0.1)' : 'var(--elevated)', 
-                        border: `1px solid ${pitch.isWatchlisted ? 'rgba(0,245,160,0.3)' : 'var(--border)'}`, 
-                        borderRadius: 4, cursor: 'pointer', color: pitch.isWatchlisted ? 'var(--color-green)' : 'var(--text-muted)' 
+                      style={{
+                        padding: '9px 12px', background: pitch.isWatchlisted ? 'rgba(0,245,160,0.1)' : 'var(--elevated)',
+                        border: `1px solid ${pitch.isWatchlisted ? 'rgba(0,245,160,0.3)' : 'var(--border)'}`,
+                        borderRadius: 4, cursor: 'pointer', color: pitch.isWatchlisted ? 'var(--color-green)' : 'var(--text-muted)'
                       }}
                     >
                       {pitch.isWatchlisted ? <BookmarkCheck size={16} /> : <BookmarkPlus size={16} />}

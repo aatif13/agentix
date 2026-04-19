@@ -5,7 +5,7 @@ import User from '@/models/User'
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password } = await req.json()
+    const { name, email, password, role } = await req.json()
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Name, email and password are required' }, { status: 400 })
@@ -14,6 +14,8 @@ export async function POST(req: NextRequest) {
     if (password.length < 6) {
       return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
     }
+
+    const validRole = role === 'investor' ? 'investor' : 'founder'
 
     await connectDB()
 
@@ -30,9 +32,10 @@ export async function POST(req: NextRequest) {
       name,
       email: normalizedEmail,
       password: hashedPassword,
+      role: validRole,
     })
 
-    return NextResponse.json({ success: true, message: 'Account created successfully' }, { status: 201 })
+    return NextResponse.json({ success: true, message: 'Account created successfully', role: validRole }, { status: 201 })
   } catch (error) {
     console.error('Register error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

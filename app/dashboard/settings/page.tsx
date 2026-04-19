@@ -2,37 +2,65 @@
 
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { Save, Key, ToggleLeft, AlertTriangle, Check, User } from 'lucide-react'
+import { 
+  Save, User, Target, Bell, Briefcase, Send, Code, 
+  MapPin, Globe, Users, Rocket, Check, Loader2, Camera
+} from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import TopBar from '@/components/TopBar'
-import LoadingSkeleton from '@/components/LoadingSkeleton'
 
-interface UserProfile {
+interface ProfileData {
   name: string
   email: string
-  startupName: string
-  startupIdea: string
-  openaiKey: string
-  serperKey: string
-  plan: string
+  avatar: string
+  linkedinUrl: string
+  twitterUrl: string
+  githubUrl: string
+  location: string
+  bio: string
+  preferredIndustry: string
+  stage: 'idea' | 'mvp' | 'revenue' | 'scaling'
+  cofounderStatus: 'solo' | 'has co-founder' | 'looking for co-founder'
+  notifications: {
+    investorViews: boolean
+    progressReminders: boolean
+    problemSuggestions: boolean
+  }
 }
 
-const INTEGRATIONS = [
-  { name: 'Notion', desc: 'Sync ideas and tasks to Notion pages', emoji: '📝' },
-  { name: 'GitHub', desc: 'Connect repos for AI code agent context', emoji: '🐙' },
-  { name: 'Slack', desc: 'Get agent task updates in Slack', emoji: '💬' },
-  { name: 'Linear', desc: 'Auto-create issues from agent tasks', emoji: '📋' },
-]
+const T = {
+  card: { background: '#0C1018', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 },
+  input: { width: '100%', background: '#060A0F', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '12px 14px', color: '#E8EDF5', fontSize: 14, outline: 'none' },
+  label: { display: 'block', fontSize: 11, color: '#6B7A91', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 8, fontFamily: "'Space Mono', monospace" },
+  btn: { padding: '12px 24px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: '#00F5A0', color: '#060A0F', display: 'inline-flex', alignItems: 'center', gap: 8 },
+  accent: '#00F5A0',
+  dim: '#6B7A91',
+}
 
 export default function SettingsPage() {
   const { data: session } = useSession()
-  const [profile, setProfile] = useState<UserProfile>({ name: '', email: '', startupName: '', startupIdea: '', openaiKey: '', serperKey: '', plan: 'starter' })
+  const [activeTab, setActiveTab] = useState<'profile' | 'startup' | 'notifications'>('profile')
+  const [profile, setProfile] = useState<ProfileData>({
+    name: '',
+    email: '',
+    avatar: '',
+    linkedinUrl: '',
+    twitterUrl: '',
+    githubUrl: '',
+    location: '',
+    bio: '',
+    preferredIndustry: '',
+    stage: 'idea',
+    cofounderStatus: 'solo',
+    notifications: {
+      investorViews: true,
+      progressReminders: true,
+      problemSuggestions: true,
+    }
+  })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [toggles, setToggles] = useState<Record<string, boolean>>({})
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [deleteConfirm, setDeleteConfirm] = useState('')
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -40,248 +68,290 @@ export default function SettingsPage() {
         const res = await fetch('/api/user')
         if (res.ok) {
           const data = await res.json()
-          const u = data.user
-          setProfile({
-            name: u.name || '',
-            email: u.email || '',
-            startupName: u.startupName || '',
-            startupIdea: u.startupIdea || '',
-            openaiKey: u.openaiKey || '',
-            serperKey: u.serperKey || '',
-            plan: u.plan || 'starter',
-          })
+          setProfile(data.user)
         }
       } finally {
         setLoading(false)
       }
     }
     fetchUser()
-  }, [session])
+  }, [])
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSave = async () => {
     setSaving(true)
     try {
-      await fetch('/api/user', {
-        method: 'PUT',
+      const res = await fetch('/api/user', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profile),
       })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+      }
     } finally {
       setSaving(false)
     }
   }
 
-  const planColors: Record<string, string> = {
-    starter: 'var(--color-cyan)',
-    growth: 'var(--color-green)',
-    enterprise: 'var(--color-purple)',
-  }
+  const TabButton = ({ id, label, icon: Icon }: { id: typeof activeTab, label: string, icon: any }) => (
+    <button
+      onClick={() => setActiveTab(id)}
+      style={{
+        ...T.label,
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 10, 
+        padding: '12px 20px',
+        background: activeTab === id ? 'rgba(0, 245, 160, 0.05)' : 'transparent',
+        border: 'none', 
+        borderBottom: `2px solid ${activeTab === id ? T.accent : 'transparent'}`,
+        color: activeTab === id ? '#fff' : T.dim,
+        cursor: 'pointer', 
+        fontSize: 13, 
+        transition: 'all 0.2s',
+        textTransform: 'none', 
+        marginBottom: 0
+      }}
+    >
+      <Icon size={16} /> {label}
+    </button>
+  )
 
-  if (loading) {
-    return (
-      <div className="dashboard-layout">
-        <Sidebar />
-        <div className="dashboard-main">
-          <TopBar title="Settings" />
-          <div className="dashboard-content">
-            <LoadingSkeleton type="card" count={4} />
-          </div>
+  if (loading) return (
+    <div className="dashboard-layout">
+      <Sidebar />
+      <div className="dashboard-main">
+        <TopBar title="Settings" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
+          <Loader2 className="animate-spin" size={32} style={{ color: T.accent }} />
         </div>
       </div>
-    )
-  }
+    </div>
+  )
 
   return (
     <div className="dashboard-layout">
       <Sidebar />
       <div className="dashboard-main">
-        <TopBar title="Settings" subtitle="Manage your profile and integrations" />
-        <div className="dashboard-content" style={{ maxWidth: 720 }}>
+        <TopBar title="Founder Settings" subtitle="Configure your profile and professional preferences" />
+        <div className="dashboard-content" style={{ padding: '32px', maxWidth: '800px' }}>
 
-          {saved && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: 'rgba(0,245,160,0.08)', border: '1px solid rgba(0,245,160,0.2)',
-              borderRadius: 4, padding: '10px 16px', marginBottom: 20,
-              color: 'var(--color-green)', fontSize: 13,
-            }}>
-              <Check size={14} /> Settings saved successfully
-            </div>
-          )}
-
-          {/* Profile */}
-          <div className="card" style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-              <User size={16} style={{ color: 'var(--color-green)' }} />
-              <h2 style={{ fontSize: 15, fontWeight: 700 }}>Profile</h2>
-            </div>
-            <form onSubmit={handleSave}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                <div style={{
-                  width: 64, height: 64, borderRadius: 4,
-                  background: 'rgba(0,245,160,0.12)', border: '2px solid rgba(0,245,160,0.2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'Syne', fontWeight: 800, fontSize: 24, color: 'var(--color-green)',
-                  flexShrink: 0,
-                }}>
-                  {profile.name.charAt(0).toUpperCase() || '?'}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: 600, marginBottom: 2 }}>{profile.name}</p>
-                  <p style={{ fontFamily: 'Space Mono', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{profile.email}</p>
-                  <span style={{
-                    fontFamily: 'Space Mono', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
-                    color: planColors[profile.plan] || planColors.starter,
-                    background: (planColors[profile.plan] || planColors.starter) + '15',
-                    border: `1px solid ${(planColors[profile.plan] || planColors.starter)}30`,
-                    borderRadius: 4, padding: '2px 8px',
-                  }}>
-                    {profile.plan.toUpperCase()} PLAN
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Full Name</label>
-                  <input className="input" value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Email</label>
-                  <input className="input" value={profile.email} disabled style={{ opacity: 0.6 }} />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Startup Name</label>
-                  <input className="input" placeholder="Untitled Startup" value={profile.startupName} onChange={e => setProfile({ ...profile, startupName: e.target.value })} />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Startup Idea (short)</label>
-                  <input className="input" placeholder="One-line pitch" value={profile.startupIdea} onChange={e => setProfile({ ...profile, startupIdea: e.target.value })} />
-                </div>
-              </div>
-
-              {/* API Keys */}
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, marginTop: 20, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                <Key size={14} style={{ color: 'var(--color-purple)' }} />
-                <h3 style={{ fontSize: 13, fontWeight: 700 }}>API Keys</h3>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">OpenAI API Key</label>
-                  <input className="input" type="password" placeholder="sk-..." value={profile.openaiKey} onChange={e => setProfile({ ...profile, openaiKey: e.target.value })} />
-                </div>
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Serper API Key</label>
-                  <input className="input" type="password" placeholder="serp-..." value={profile.serperKey} onChange={e => setProfile({ ...profile, serperKey: e.target.value })} />
-                </div>
-              </div>
-
-              <button type="submit" className="btn btn-primary" disabled={saving} style={{ marginTop: 20, fontSize: 13 }}>
-                {saving ? <><span className="spinner" /> Saving...</> : <><Save size={14} /> Save Changes</>}
-              </button>
-            </form>
+          {/* Tab Navigation */}
+          <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: '32px' }}>
+            <TabButton id="profile" label="Profile Essentials" icon={User} />
+            <TabButton id="startup" label="Startup Preferences" icon={Target} />
+            <TabButton id="notifications" label="Notifications" icon={Bell} />
           </div>
 
-          {/* Plan */}
-          <div className="card" style={{ marginBottom: 20 }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Current Plan</h2>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--elevated)', borderRadius: 4, border: '1px solid var(--border)' }}>
-              <div>
-                <p style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 18, color: planColors[profile.plan] || planColors.starter }}>
-                  {profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1)} Plan
-                </p>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-                  {profile.plan === 'starter' ? '5 validations, 50 chats, 10 tasks/month' :
-                    profile.plan === 'growth' ? 'Unlimited validations, 500 chats, 100 tasks/month' :
-                      'Everything + custom agents, SLA, SSO'}
-                </p>
-              </div>
-              <button className="btn btn-outline" style={{ fontSize: 12 }}>Upgrade Plan</button>
-            </div>
-          </div>
+          <div style={{ minHeight: '400px' }}>
+            
+            {/* TAB 1: PROFILE */}
+            {activeTab === 'profile' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '8px' }}>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ 
+                      width: '80px', height: '80px', borderRadius: '16px', 
+                      background: 'rgba(0, 245, 160, 0.12)', border: '2px solid rgba(0, 245, 160, 0.3)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '32px', fontWeight: 800, color: T.accent, fontFamily: 'Syne'
+                    }}>
+                      {profile.name.charAt(0).toUpperCase() || '?'}
+                    </div>
+                    <button style={{ 
+                      position: 'absolute', bottom: '-4px', right: '-4px', 
+                      width: '28px', height: '28px', borderRadius: '50%', background: '#1A2535',
+                      border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: T.dim, cursor: 'pointer'
+                    }} title="Upload Photo">
+                      <Camera size={14} />
+                    </button>
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '4px', fontFamily: 'Syne' }}>{profile.name || 'Founder Name'}</h2>
+                    <p style={{ color: T.dim, fontSize: '13px' }}>{profile.email}</p>
+                  </div>
+                </div>
 
-          {/* Integrations */}
-          <div className="card" style={{ marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <ToggleLeft size={16} style={{ color: 'var(--color-cyan)' }} />
-              <h2 style={{ fontSize: 15, fontWeight: 700 }}>Integrations</h2>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {INTEGRATIONS.map(int => (
-                <div key={int.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--elevated)', borderRadius: 4, border: '1px solid var(--border)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontSize: 22 }}>{int.emoji}</span>
-                    <div>
-                      <p style={{ fontWeight: 600, fontSize: 14 }}>{int.name}</p>
-                      <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{int.desc}</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div>
+                    <label style={T.label}>Full Name</label>
+                    <input style={T.input} value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} />
+                  </div>
+                  <div>
+                    <label style={T.label}>Email (Read-only)</label>
+                    <input style={{...T.input, opacity: 0.5}} value={profile.email} disabled />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={T.label}>Bio (2-3 sentences)</label>
+                  <textarea style={{...T.input, minHeight: '80px', resize: 'vertical'}} value={profile.bio} onChange={e => setProfile({...profile, bio: e.target.value})} placeholder="Tell us about yourself..." />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div>
+                    <label style={T.label}>Location</label>
+                    <div style={{ position: 'relative' }}>
+                      <MapPin size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: T.dim }} />
+                      <input style={{...T.input, paddingLeft: '40px'}} value={profile.location} onChange={e => setProfile({...profile, location: e.target.value})} placeholder="e.g. San Francisco, CA" />
                     </div>
                   </div>
-                  <button
-                    onClick={() => setToggles(prev => ({ ...prev, [int.name]: !prev[int.name] }))}
-                    style={{
-                      width: 44, height: 24, borderRadius: 12, cursor: 'pointer',
-                      background: toggles[int.name] ? 'var(--color-green)' : 'var(--elevated)',
-                      border: `1px solid ${toggles[int.name] ? 'var(--color-green)' : 'var(--border)'}`,
-                      transition: 'all 0.2s', position: 'relative',
-                    }}
-                  >
-                    <span style={{
-                      position: 'absolute', top: 3, left: toggles[int.name] ? 22 : 3,
-                      width: 16, height: 16, borderRadius: '50%',
-                      background: toggles[int.name] ? '#060A0F' : 'var(--text-muted)',
-                      transition: 'left 0.2s',
-                    }} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Danger Zone */}
-          <div className="card" style={{ borderColor: 'rgba(255,107,53,0.2)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <AlertTriangle size={16} style={{ color: 'var(--color-orange)' }} />
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-orange)' }}>Danger Zone</h2>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'rgba(255,107,53,0.04)', borderRadius: 4, border: '1px solid rgba(255,107,53,0.15)' }}>
-              <div>
-                <p style={{ fontWeight: 600, fontSize: 14 }}>Delete Account</p>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Permanently delete your account and all data. This cannot be undone.</p>
-              </div>
-              <button className="btn btn-danger" style={{ fontSize: 12 }} onClick={() => setShowDeleteModal(true)}>
-                Delete Account
-              </button>
-            </div>
-          </div>
-
-          {/* Delete Confirmation Modal */}
-          {showDeleteModal && (
-            <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && setShowDeleteModal(false)}>
-              <div className="modal-box" style={{ maxWidth: 440 }}>
-                <div className="modal-header">
-                  <h2 className="modal-title" style={{ color: 'var(--color-orange)' }}>⚠️ Delete Account</h2>
-                  <button className="modal-close" onClick={() => setShowDeleteModal(false)} aria-label="Close">×</button>
-                </div>
-                <div className="modal-body">
-                  <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.6 }}>
-                    This will permanently delete your account, all chats, ideas, and tasks. This action <strong style={{ color: 'var(--text-primary)' }}>cannot be undone</strong>.
-                  </p>
-                  <div className="form-group">
-                    <label className="form-label">Type <strong style={{ color: 'var(--color-orange)' }}>DELETE</strong> to confirm</label>
-                    <input className="input" value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)} placeholder="DELETE" />
+                  <div>
+                    <label style={T.label}>Website / URL</label>
+                    <div style={{ position: 'relative' }}>
+                      <Globe size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: T.dim }} />
+                      <input style={{...T.input, paddingLeft: '40px'}} placeholder="https://yourwebsite.com" />
+                    </div>
                   </div>
-                  <button className="btn btn-danger" disabled={deleteConfirm !== 'DELETE'} style={{ width: '100%', justifyContent: 'center', fontSize: 13 }}>
-                    Permanently Delete Account
-                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={T.label}>LinkedIn</label>
+                    <div style={{ position: 'relative' }}>
+                      <Briefcase size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: T.dim }} />
+                      <input style={{...T.input, paddingLeft: '40px'}} value={profile.linkedinUrl} onChange={e => setProfile({...profile, linkedinUrl: e.target.value})} placeholder="linkedin.com/in/..." />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={T.label}>Twitter / X</label>
+                    <div style={{ position: 'relative' }}>
+                      <Send size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: T.dim }} />
+                      <input style={{...T.input, paddingLeft: '40px'}} value={profile.twitterUrl} onChange={e => setProfile({...profile, twitterUrl: e.target.value})} placeholder="@username" />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={T.label}>GitHub</label>
+                    <div style={{ position: 'relative' }}>
+                      <Code size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: T.dim }} />
+                      <input style={{...T.input, paddingLeft: '40px'}} value={profile.githubUrl} onChange={e => setProfile({...profile, githubUrl: e.target.value})} placeholder="github.com/..." />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* TAB 2: STARTUP PREFERENCES */}
+            {activeTab === 'startup' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div>
+                  <label style={T.label}>Preferred Industry</label>
+                  <input style={T.input} value={profile.preferredIndustry} onChange={e => setProfile({...profile, preferredIndustry: e.target.value})} placeholder="e.g. FinTech, B2B SaaS, HealthTech" />
+                </div>
+
+                <div>
+                  <label style={T.label}>Current Startup Stage</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                    {['idea', 'mvp', 'revenue', 'scaling'].map(stage => (
+                      <button
+                        key={stage}
+                        onClick={() => setProfile({...profile, stage: stage as any})}
+                        style={{
+                          padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
+                          background: profile.stage === stage ? 'rgba(0, 245, 160, 0.1)' : '#0C1018',
+                          color: profile.stage === stage ? T.accent : T.dim,
+                          cursor: 'pointer', fontWeight: 600, fontSize: '13px', textTransform: 'capitalize'
+                        }}
+                      >
+                        {stage}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={T.label}>Co-Founder Status</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {['solo', 'has co-founder', 'looking for co-founder'].map(status => (
+                      <button
+                        key={status}
+                        onClick={() => setProfile({...profile, cofounderStatus: status as any})}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', borderRadius: '8px',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          background: profile.cofounderStatus === status ? 'rgba(0, 245, 160, 0.05)' : '#0C1018',
+                          color: profile.cofounderStatus === status ? '#fff' : T.dim,
+                          cursor: 'pointer', textAlign: 'left' as const, transition: 'all 0.2s'
+                        }}
+                      >
+                        <div style={{ 
+                          width: '18px', height: '18px', borderRadius: '50%', border: `2px solid ${profile.cofounderStatus === status ? T.accent : 'rgba(255,255,255,0.15)'}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                          {profile.cofounderStatus === status && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: T.accent }} />}
+                        </div>
+                        <span style={{ fontSize: '14px', fontWeight: 500, textTransform: 'capitalize' }}>{status}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: NOTIFICATIONS */}
+            {activeTab === 'notifications' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[
+                  { id: 'investorViews', label: 'Email me when an investor views my pitch', desc: 'Instant notification whenever your profile is accessed by a verified investor' },
+                  { id: 'progressReminders', label: 'Weekly progress reminder', desc: 'A Sunday summary of your milestones and experiments for the week' },
+                  { id: 'problemSuggestions', label: 'New problem suggestions in my domain', desc: 'Get alerted when our AI agents find new high-potential problems in your preferred industry' }
+                ].map(item => (
+                  <div key={item.id} style={{ ...T.card, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px' }}>{item.label}</p>
+                      <p style={{ fontSize: '12px', color: T.dim }}>{item.desc}</p>
+                    </div>
+                    <button 
+                      onClick={() => setProfile({
+                        ...profile, 
+                        notifications: { ...profile.notifications, [item.id]: !((profile.notifications as any)[item.id]) }
+                      })}
+                      style={{
+                        width: '44px', height: '24px', borderRadius: '12px', cursor: 'pointer',
+                        background: (profile.notifications as any)[item.id] ? T.accent : 'rgba(255,255,255,0.05)',
+                        border: 'none', position: 'relative', transition: 'all 0.2s'
+                      }}
+                    >
+                      <div style={{
+                        position: 'absolute', top: '3px', 
+                        left: (profile.notifications as any)[item.id] ? '23px' : '3px',
+                        width: '18px', height: '18px', borderRadius: '50%',
+                        background: (profile.notifications as any)[item.id] ? '#060A0F' : T.dim,
+                        transition: 'all 0.2s'
+                      }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </div>
+
+          {/* Footer Actions */}
+          <div style={{ marginTop: '40px', borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            {saved && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: T.accent, fontSize: '13px', fontWeight: 600 }}>
+                <Check size={16} /> Saved!
+              </div>
+            )}
+            <button 
+              onClick={handleSave} 
+              disabled={saving}
+              style={{...T.btn, opacity: saving ? 0.7 : 1}}
+            >
+              {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+              {saving ? 'Saving...' : 'Save Profile'}
+            </button>
+          </div>
+
         </div>
       </div>
+      <style jsx>{`
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   )
 }

@@ -1057,3 +1057,88 @@ code, .mono {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--elevated); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: #2a3748; }
+
+/* ===== INVESTOR CARDS (glassmorphism) ===== */
+@keyframes pageSlideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(0,245,160,0.08); }
+  50%       { box-shadow: 0 0 24px rgba(0,245,160,0.18); }
+}
+
+.investor-card {
+  background: rgba(12, 16, 24, 0.85);
+  border: 1px solid rgba(0, 245, 160, 0.12);
+  border-radius: 8px;
+  padding: 20px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.25s ease;
+  animation: pageSlideIn 0.4s ease forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+.investor-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0,245,160,0.03) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.investor-card:hover {
+  border-color: rgba(0, 245, 160, 0.3);
+  box-shadow: 0 0 28px rgba(0,245,160,0.10), 0 4px 24px rgba(0,0,0,0.3);
+  transform: translateY(-2px);
+}
+
+/* ===== SCORE RING GLOW ===== */
+.score-ring-wrapper {
+  filter: drop-shadow(0 0 8px rgba(0,245,160,0.5));
+}
+
+/* ===== PAGE TRANSITION ===== */
+.dashboard-content > * {
+  animation: pageSlideIn 0.35s ease forwards;
+}
+
+/* ===== INVESTOR INSIGHT PANEL ===== */
+.insight-panel {
+  background: var(--surface);
+  border: 1px solid rgba(0,245,160,0.15);
+  border-radius: 8px;
+  padding: 28px;
+  min-height: 500px;
+}
+
+/* ===== SECTOR BADGE ===== */
+.sector-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(0,245,160,0.08);
+  border: 1px solid rgba(0,245,160,0.2);
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--color-green);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ===== RESPONSIVE INVESTOR ===== */
+@media (max-width: 900px) {
+  .investor-grid-2 { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 768px) {
+  .investor-card { padding: 16px; }
+}
+

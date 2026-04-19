@@ -4,8 +4,8 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { connectDB } from '@/lib/mongodb'
 import IdeaValidation from '@/models/IdeaValidation'
 
-function generateMockAnalysis(idea: string, industry: string) {
-  const seed = idea.length + industry.length
+function generateMockAnalysis(idea: string, industry: string, problemContext?: any) {
+  const seed = idea.length + industry.length + (problemContext?.title?.length || 0)
   const validationScore = 55 + (seed % 40)
   const feasibilityScore = 60 + (seed % 35)
   const trendScore = 50 + (seed % 45)
@@ -23,11 +23,11 @@ function generateMockAnalysis(idea: string, industry: string) {
     competitionLevel,
     marketSize,
     leanCanvas: {
-      problem: `Current solutions lack AI integration and personalization, leaving users frustrated with manual, slow processes that don't scale for ${industry} businesses.`,
-      solution: `An AI-powered platform that automates ${idea.split(' ').slice(0, 4).join(' ')} workflows, reducing manual effort by 70% and providing real-time insights.`,
-      uvp: `The only ${industry} platform that combines AI automation with human oversight — 10x faster, 5x cheaper than existing solutions.`,
+      problem: problemContext ? `Solving: ${problemContext.title}. ${problemContext.description}. Current solutions lack AI integration and personalization.` : `Current solutions lack AI integration and personalization, leaving users frustrated with manual, slow processes that don't scale for ${industry} businesses.`,
+      solution: `An AI-powered platform that automates ${idea.split(' ').slice(0, 4).join(' ')} workflows, specifically addressing the ${problemContext?.title || industry} vertical.`,
+      uvp: problemContext ? `Built specifically for ${problemContext.title} — 10x faster, 5x cheaper than existing general solutions.` : `The only ${industry} platform that combines AI automation with human oversight — 10x faster, 5x cheaper than existing solutions.`,
       channels: 'Product Hunt launch, LinkedIn B2B outreach, content marketing, strategic partnerships with accelerators, and freemium self-serve model.',
-      customerSegments: `Early-stage startups (1-50 employees), growth-stage ${industry} companies, and solo founders looking to scale without hiring.`,
+      customerSegments: problemContext ? `Users struggling with ${problemContext.title}, early-stage startups, and growth-stage ${industry} companies.` : `Early-stage startups (1-50 employees), growth-stage ${industry} companies, and solo founders looking to scale without hiring.`,
       revenueStreams: 'Monthly SaaS subscriptions ($29/$99/$499), usage-based API pricing, and enterprise custom contracts.',
       costStructure: 'Cloud infrastructure (AWS/GCP), AI API costs (OpenAI/Anthropic), team salaries, marketing spend, and customer support.',
       keyMetrics: 'MRR growth, CAC, LTV/CAC ratio, daily active users, feature adoption rate, and NPS score.',
@@ -82,10 +82,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { ideaTitle, ideaDescription, industry, targetMarket } = await req.json()
+    let { ideaTitle, ideaDescription, industry, targetMarket, problemContext } = await req.json()
+
+    if (!ideaTitle && problemContext?.title) {
+      ideaTitle = `Solution for: ${problemContext.title}`
+    }
+    if (!ideaDescription && problemContext?.description) {
+      ideaDescription = problemContext.description
+    }
+    if (!industry && problemContext?.domain) {
+      industry = problemContext.domain
+    }
 
     if (!ideaTitle || !ideaDescription || !industry) {
-      return NextResponse.json({ error: 'Title, description and industry are required' }, { status: 400 })
+      return NextResponse.json({ error: 'Title, description and industry are required (or a selected problem context)' }, { status: 400 })
     }
 
     await connectDB()
@@ -102,7 +112,7 @@ export async function POST(req: NextRequest) {
     // Simulate async analysis after 2s
     setTimeout(async () => {
       try {
-        const analysis = generateMockAnalysis(ideaDescription, industry)
+        const analysis = generateMockAnalysis(ideaDescription, industry, problemContext)
         await IdeaValidation.findByIdAndUpdate(idea._id, {
           ...analysis,
           status: 'complete',

@@ -26,7 +26,14 @@ export default function LoginPage() {
       if (res?.error) {
         setError(res.error === 'CredentialsSignin' ? 'Invalid email or password' : res.error)
       } else {
-        router.push('/dashboard')
+        // Fetch session to get role
+        const sessionRes = await fetch('/api/auth/session')
+        const session = await sessionRes.json()
+        if (session?.user?.role === 'investor') {
+          router.push('/investor/dashboard')
+        } else {
+          router.push('/dashboard')
+        }
       }
     } catch {
       setError('Something went wrong. Please try again.')
@@ -51,6 +58,19 @@ export default function LoginPage() {
 
         <div className="card" style={{ padding: '32px' }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 24 }}>Welcome back</h1>
+
+          <div style={{
+            marginTop: -10,
+            marginBottom: 24,
+            padding: 12,
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            fontSize: 13,
+            color: 'var(--text-muted)'
+          }}>
+            💡 <strong>Testing both roles?</strong> Use different browsers or one normal + one incognito window.
+          </div>
 
           {error && (
             <div style={{
@@ -112,9 +132,9 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={async () => {
-              await signIn('google', { 
+              await signIn('google', {
                 callbackUrl: '/dashboard',
-                redirect: true 
+                redirect: true
               })
             }}
             className="btn btn-outline"

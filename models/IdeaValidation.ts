@@ -33,6 +33,9 @@ export interface IIdeaValidation extends Document {
   leanCanvas: ILeanCanvas
   competitors: ICompetitor[]
   status: 'pending' | 'analyzing' | 'complete'
+  isPublic: boolean
+  fundingAsk: string
+  traction: string
   createdAt: Date
 }
 
@@ -68,6 +71,9 @@ const IdeaValidationSchema = new Schema<IIdeaValidation>(
       },
     ],
     status: { type: String, enum: ['pending', 'analyzing', 'complete'], default: 'pending' },
+    isPublic: { type: Boolean, default: false },
+    fundingAsk: { type: String, default: '' },
+    traction: { type: String, default: '' },
   },
   { timestamps: true }
 )

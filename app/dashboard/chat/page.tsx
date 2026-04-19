@@ -7,6 +7,8 @@ import Sidebar from '@/components/Sidebar'
 import TopBar from '@/components/TopBar'
 import ChatMessage from '@/components/ChatMessage'
 import EmptyState from '@/components/EmptyState'
+import { useSelectedProblem } from '@/lib/useSelectedProblem'
+import { Target } from 'lucide-react'
 
 const AGENTS = [
   { value: 'supervisor', label: '🧠 Supervisor', name: 'Supervisor AI' },
@@ -55,6 +57,7 @@ export default function ChatPage() {
   const [newChatMode, setNewChatMode] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { problem } = useSelectedProblem()
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
 
@@ -216,7 +219,13 @@ export default function ChatPage() {
               <span style={{ fontSize: 24 }}>{AGENTS.find(a => a.value === selectedAgent)?.label.split(' ')[0]}</span>
               <div>
                 <p style={{ fontWeight: 600, fontSize: 14 }}>{agentInfo?.name}</p>
-                <p style={{ fontFamily: 'Space Mono', fontSize: 10, color: 'var(--text-muted)' }}>Select agent below to change</p>
+                {problem ? (
+                  <p style={{ fontSize: 11, color: '#00F5A0', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Target size={12} /> Context: {problem.title}
+                  </p>
+                ) : (
+                  <p style={{ fontFamily: 'Space Mono', fontSize: 10, color: 'var(--text-muted)' }}>Select agent below to change</p>
+                )}
               </div>
               <select
                 value={selectedAgent}

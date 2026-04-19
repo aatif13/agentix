@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const {
+    let {
       projectName,
       description,
       appType,
@@ -53,8 +53,26 @@ export async function POST(req: Request) {
       hasBudget,
       region,
       codingExperience,
-      features
+      features,
+      problemContext
     } = body
+
+    // Auto-populate from problemContext if missing
+    if (!projectName && problemContext?.title) {
+      projectName = `Solution for ${problemContext.title}`
+    }
+    if (!description && problemContext?.description) {
+      description = problemContext.description
+    }
+    if (!targetUsers && problemContext?.domain) {
+      targetUsers = `Users in ${problemContext.domain}`
+    }
+    appType = appType || 'Web App'
+    expectedUsers = expectedUsers || 'Less than 1000'
+    teamSize = teamSize || 'Solo founder'
+    region = region || 'Global'
+    codingExperience = codingExperience || 'Intermediate'
+    features = features || []
 
     const systemPrompt = `You are a senior software architect and CTO advisor for early-stage startups. Generate a complete technical blueprint for the startup described. Return ONLY valid JSON with no markdown, no backticks, no explanation.
 The JSON must have this exact structure:
@@ -84,7 +102,11 @@ Team Size: ${teamSize}
 Budget Available: ${hasBudget ? 'Yes' : 'No'}
 Region: ${region}
 Coding Experience: ${codingExperience}
-Required Features: ${(features || []).join(', ')}`
+Required Features: ${(features || []).join(', ')}
+${problemContext ? `\nFOUNDATIONAL PROBLEM CONTEXT:
+The user is specifically building this to solve: ${problemContext.title}
+Problem Description: ${problemContext.description}
+Identified Opportunity: ${problemContext.opportunity}` : ''}`
 
     let blueprint
     try {

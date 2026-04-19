@@ -4,69 +4,60 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import {
-  Zap, Bot, CheckCircle2, TrendingUp, Lightbulb,
-  MessageSquare, Play, BarChart3, ArrowRight,
+  CheckCircle2, Circle, Lock, ChevronRight,
+  Target, BarChart3, Rocket, Loader2, ArrowRight
 } from 'lucide-react'
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
-} from 'recharts'
 import Sidebar from '@/components/Sidebar'
 import TopBar from '@/components/TopBar'
-import KPICard from '@/components/KPICard'
-import StatusBadge from '@/components/StatusBadge'
-import LoadingSkeleton from '@/components/LoadingSkeleton'
 
-interface Stats {
-  totalTasks: number
-  completedTasks: number
-  activeChats: number
-  totalIdeas: number
-  recentActivity: Array<{
-    id: string
-    type: string
-    label: string
-    agent: string
-    emoji: string
-    status: string
-    date: string
-  }>
-  weeklyActivity: Array<{ day: string; tasks: number }>
+interface JourneyStep {
+  id: string
+  label: string
+  status: 'completed' | 'in-progress' | 'locked'
+  summary: string
+  cta: string
+  ctaLabel: string
 }
 
-function timeAgo(date: string) {
-  const diff = Date.now() - new Date(date).getTime()
-  const min = Math.floor(diff / 60000)
-  if (min < 1) return 'just now'
-  if (min < 60) return `${min}m ago`
-  const hr = Math.floor(min / 60)
-  if (hr < 24) return `${hr}h ago`
-  return `${Math.floor(hr / 24)}d ago`
+interface DashboardStats {
+  activeProblem: string
+  latestIdeaScore: number
+  pitchStatus: string
+  viewCount: number
+  interestCount: number
+  journey: JourneyStep[]
 }
 
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div style={{ background: 'var(--elevated)', border: '1px solid var(--border)', borderRadius: 4, padding: '8px 12px' }}>
-        <p style={{ fontFamily: 'Space Mono', fontSize: 11, color: 'var(--text-muted)' }}>{label}</p>
-        <p style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 700, color: 'var(--color-green)' }}>{payload[0].value} tasks</p>
-      </div>
-    )
-  }
-  return null
+const T = {
+  card: { background: '#0C1018', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12 },
+  accent: '#00ff88',
+  dim: '#6B7A91',
+  syne: { fontFamily: "'Syne', sans-serif" },
+  mono: { fontFamily: "'Space Mono', monospace" },
 }
 
 export default function DashboardPage() {
   const { data: session } = useSession()
-  const [stats, setStats] = useState<Stats | null>(null)
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [pendingIntros, setPendingIntros] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/dashboard/stats')
-      if (!res.ok) throw new Error('Failed to load stats')
-      const data = await res.json()
-      setStats(data)
+      const [statsRes, notifsRes] = await Promise.all([
+        fetch('/api/dashboard/stats'),
+        fetch('/api/notifications?status=pending&type=investor_interest')
+      ])
+      
+      if (!statsRes.ok) throw new Error('Failed to load stats')
+      const statsData = await statsRes.json()
+      setStats(statsData)
+
+      if (notifsRes.ok) {
+        const notifsData = await notifsRes.json()
+        setPendingIntros(notifsData.notifications || [])
+      }
     } catch {
       setError('Failed to load dashboard data')
     } finally {
@@ -76,123 +67,288 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchStats() }, [])
 
-  const health = stats
-    ? Math.round(
-        (stats.completedTasks / Math.max(stats.totalTasks, 1)) * 40 +
-        Math.min(stats.activeChats * 10, 30) +
-        Math.min(stats.totalIdeas * 5, 30)
-      )
-    : 0
+  const handleOpenNotifs = () => {
+    window.dispatchEvent(new Event('open-notifications'))
+  }
+
+  if (loading) {
+    return (
+      <div className="dashboard-layout">
+        <Sidebar />
+        <div className="dashboard-main">
+          <TopBar title="Overview" subtitle="Loading your startup journey..." />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
+            <Loader2 className="animate-spin" size={32} style={{ color: T.accent }} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const getTimeAgo = (date: string) => {
+    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000)
+    if (seconds < 60) return 'Just now'
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
+    return new Date(date).toLocaleDateString()
+  }
 
   return (
     <div className="dashboard-layout">
       <Sidebar />
       <div className="dashboard-main">
         <TopBar title="Overview" subtitle={`Welcome back, ${session?.user?.name?.split(' ')[0] || 'Founder'} 👋`} />
-        <div className="dashboard-content">
-          {error && (
-            <div style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)', borderRadius: 4, padding: '12px 16px', marginBottom: 20, color: 'var(--color-orange)', fontSize: 13, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {error}
-              <button className="btn btn-ghost" style={{ padding: '4px 12px', fontSize: 12 }} onClick={fetchStats}>Retry</button>
-            </div>
-          )}
+        <div className="dashboard-content" style={{ padding: '32px' }}>
+          
+          {/* Journey Tracker */}
+          <section style={{ marginBottom: '40px' }}>
+            <h2 style={{ ...T.syne, fontSize: '20px', fontWeight: 800, marginBottom: '24px', letterSpacing: '-0.02em' }}>
+              Founder Journey Progress
+            </h2>
+            <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }}>
+              {stats?.journey.map((step, idx) => (
+                <div key={idx} style={{ 
+                  ...T.card, 
+                  minWidth: '280px', 
+                  flex: 1, 
+                  padding: '24px',
+                  position: 'relative',
+                  background: step.status === 'in-progress' ? 'rgba(0, 255, 136, 0.03)' : '#0C1018',
+                  borderColor: step.status === 'in-progress' ? 'rgba(0, 255, 136, 0.2)' : 'rgba(255,255,255,0.07)',
+                  opacity: step.status === 'locked' ? 0.5 : 1,
+                  transition: 'all 0.2s',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    {step.status === 'completed' && <CheckCircle2 size={18} style={{ color: T.accent }} />}
+                    {step.status === 'in-progress' && <Circle size={18} style={{ color: T.accent, animation: 'pulse 2s infinite' }} />}
+                    {step.status === 'locked' && <Lock size={18} style={{ color: T.dim }} />}
+                    <span style={{ 
+                      ...T.mono, 
+                      fontSize: '11px', 
+                      letterSpacing: '0.05em', 
+                      textTransform: 'uppercase',
+                      color: step.status === 'locked' ? T.dim : T.accent,
+                      fontWeight: 700 
+                    }}>
+                      Step {idx + 1}
+                    </span>
+                  </div>
 
-          {/* KPI Cards */}
-          {loading ? (
-            <LoadingSkeleton type="card" count={4} />
-          ) : (
-            <div className="kpi-grid" style={{ marginBottom: 28 }}>
-              <KPICard icon={Zap} label="Total Agent Runs" value={stats?.totalTasks ?? 0} color="var(--color-green)" />
-              <KPICard icon={Bot} label="Active Chats" value={stats?.activeChats ?? 0} color="var(--color-cyan)" />
-              <KPICard icon={CheckCircle2} label="Tasks Completed" value={`${stats?.totalTasks ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0}%`} color="var(--color-purple)" />
-              <KPICard icon={TrendingUp} label="Startup Health" value={`${health}/100`} color="var(--color-orange)" />
-            </div>
-          )}
+                  <h3 style={{ ...T.syne, fontSize: '16px', fontWeight: 700, marginBottom: '8px' }}>{step.label}</h3>
+                  <p style={{ fontSize: '13px', color: T.dim, marginBottom: '20px', lineHeight: '1.5', minHeight: '40px' }}>
+                    {step.summary}
+                  </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, marginBottom: 24 }}>
-            {/* Chart */}
-            <div className="card">
-              <div className="section-header">
-                <h2 className="section-title">Agent Activity This Week</h2>
-                <span style={{ fontFamily: 'Space Mono', fontSize: 11, color: 'var(--text-muted)' }}>Last 7 days</span>
-              </div>
-              {loading ? (
-                <LoadingSkeleton type="chart" />
+                  <Link href={step.status === 'locked' ? '#' : step.cta} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    color: step.status === 'locked' ? T.dim : '#fff',
+                    pointerEvents: step.status === 'locked' ? 'none' : 'auto',
+                    ...T.mono
+                  }}>
+                    {step.ctaLabel} <ChevronRight size={14} />
+                  </Link>
+
+                  {/* Connector arrow for non-last items */}
+                  {idx < (stats?.journey.length || 0) - 1 && (
+                    <div style={{ position: 'absolute', right: '-12px', top: '50%', transform: 'translateY(-50%)', zIndex: 1, display: 'none' }}>
+                       <ChevronRight size={24} style={{ color: 'rgba(255,255,255,0.05)' }} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Investor Activity Card */}
+          <section style={{ marginBottom: '40px' }}>
+            <h2 style={{ ...T.syne, fontSize: '20px', fontWeight: 800, marginBottom: '24px', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
+              Investor Activity
+              {pendingIntros.length > 0 && (
+                <span style={{ background: 'rgba(255, 184, 0, 0.1)', color: '#FFB800', border: '1px solid rgba(255, 184, 0, 0.3)', padding: '2px 8px', borderRadius: 20, fontSize: 10, ...T.mono }}>
+                  {pendingIntros.length} PENDING
+                </span>
+              )}
+            </h2>
+
+            <div style={{
+              ...T.card,
+              padding: '24px',
+              borderLeft: pendingIntros.length > 0 ? '4px solid #FFB800' : '1px solid rgba(255,255,255,0.07)',
+              background: pendingIntros.length > 0 ? 'linear-gradient(90deg, rgba(255, 184, 0, 0.05) 0%, #0C1018 100%)' : '#0C1018'
+            }}>
+              {pendingIntros.length > 0 ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#FFB800', animation: 'pulse 2s infinite' }} />
+                    <span style={{ fontSize: 13, color: '#E8EDF5', fontWeight: 600 }}>
+                      You have {pendingIntros.length} pending investor introduction{pendingIntros.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {pendingIntros.slice(0, 3).map((notif: any) => (
+                      <div key={notif._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ flex: 1, paddingRight: 20 }}>
+                          <p style={{ fontSize: 14, color: '#fff', fontWeight: 600, marginBottom: 4 }}>
+                            {notif.fromName} {notif.firmName ? `from ${notif.firmName}` : ''}
+                          </p>
+                          <p style={{ fontSize: 12, color: T.accent, fontStyle: 'italic', marginBottom: 8, background: 'rgba(0, 255, 136, 0.05)', padding: '6px 10px', borderRadius: 6, borderLeft: `2px solid ${T.accent}` }}>
+                            "{notif.message}"
+                          </p>
+                          <p style={{ fontSize: 10, color: T.dim, ...T.mono }}>
+                            {getTimeAgo(notif.createdAt)}
+                          </p>
+                        </div>
+                        <button onClick={handleOpenNotifs} style={{ 
+                          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', 
+                          padding: '8px 16px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' 
+                        }}>
+                          Respond →
+                        </button>
+                      </div>
+                    ))}
+                    {pendingIntros.length > 3 && (
+                      <button onClick={handleOpenNotifs} style={{ background: 'none', border: 'none', color: T.dim, fontSize: 12, cursor: 'pointer', textAlign: 'left', fontWeight: 500 }}>
+                        + View {pendingIntros.length - 3} more pending requests
+                      </button>
+                    )}
+                  </div>
+                </>
               ) : (
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={stats?.weeklyActivity || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                    <XAxis dataKey="day" stroke="var(--text-muted)" tick={{ fontFamily: 'Space Mono', fontSize: 10, fill: 'var(--text-muted)' }} />
-                    <YAxis stroke="var(--text-muted)" tick={{ fontFamily: 'Space Mono', fontSize: 10, fill: 'var(--text-muted)' }} allowDecimals={false} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="tasks" stroke="var(--color-green)" strokeWidth={2} dot={{ fill: 'var(--color-green)', r: 4 }} activeDot={{ r: 6 }} />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <p style={{ color: T.dim, fontSize: 13, marginBottom: 8 }}>No pending investor introductions at the moment.</p>
+                  <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, ...T.mono }}>Keep building your startup to attract deal flow.</p>
+                </div>
               )}
             </div>
+          </section>
 
-            {/* Quick Actions */}
-            <div className="card">
-              <h2 className="section-title" style={{ marginBottom: 16 }}>Quick Actions</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[
-                  { label: 'Validate Idea', emoji: '💡', href: '/dashboard/idea-lab', color: 'var(--color-green)' },
-                  { label: 'New AI Chat', emoji: '💬', href: '/dashboard/chat', color: 'var(--color-cyan)' },
-                  { label: 'Run Agent Task', emoji: '⚡', href: '/dashboard/tasks', color: 'var(--color-purple)' },
-                  { label: 'View Analytics', emoji: '📊', href: '/dashboard/tasks', color: 'var(--color-orange)' },
-                ].map(a => (
-                  <Link key={a.label} href={a.href} style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '12px 14px', background: 'var(--elevated)', borderRadius: 4,
-                    textDecoration: 'none', border: '1px solid var(--border)', transition: 'border-color 0.15s',
-                  }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = a.color + '40'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'}
-                  >
-                    <span style={{ fontSize: 18 }}>{a.emoji}</span>
-                    <span style={{ fontSize: 13, fontWeight: 500, flex: 1 }}>{a.label}</span>
-                    <ArrowRight size={14} style={{ color: a.color }} />
-                  </Link>
-                ))}
+          {/* Quick Stats Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+            
+            {/* Active Problem */}
+            <div style={{ ...T.card, padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(0, 255, 136, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Target size={20} style={{ color: T.accent }} />
+                </div>
+                <div>
+                  <span style={{ ...T.mono, fontSize: '10px', color: T.dim, textTransform: 'uppercase' }}>Active Problem</span>
+                  <div style={{ ...T.syne, fontSize: '16px', fontWeight: 700 }}>{stats?.activeProblem}</div>
+                </div>
               </div>
+              <Link href="/dashboard/problem-finder" style={{ fontSize: '11px', color: T.accent, textDecoration: 'none', fontWeight: 600 }}>
+                View all problems →
+              </Link>
             </div>
-          </div>
 
-          {/* Recent Activity */}
-          <div className="card">
-            <div className="section-header">
-              <h2 className="section-title">Recent Activity</h2>
-              <Link href="/dashboard/tasks" className="section-link">View all →</Link>
-            </div>
-            {loading ? (
-              <LoadingSkeleton type="row" count={5} />
-            ) : stats?.recentActivity?.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                <Play size={32} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
-                <p style={{ fontSize: 14 }}>No activity yet. Start by validating an idea or running an agent task.</p>
+            {/* Idea Lab Score */}
+            <div style={{ ...T.card, padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(0, 217, 232, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <BarChart3 size={20} style={{ color: '#00D9E8' }} />
+                </div>
+                <div>
+                  <span style={{ ...T.mono, fontSize: '10px', color: T.dim, textTransform: 'uppercase' }}>Validation Score</span>
+                  <div style={{ ...T.syne, fontSize: '16px', fontWeight: 700 }}>{stats?.latestIdeaScore}/100</div>
+                </div>
               </div>
-            ) : (
-              <div>
-                {(stats?.recentActivity || []).map((item, i) => (
-                  <div key={item.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '12px 0',
-                    borderBottom: i < (stats?.recentActivity?.length || 1) - 1 ? '1px solid var(--border)' : 'none',
-                  }}>
-                    <span style={{ fontSize: 20, width: 32, textAlign: 'center' }}>{item.emoji}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 500, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</p>
-                      <p style={{ fontFamily: 'Space Mono', fontSize: 10, color: 'var(--text-muted)' }}>{item.agent} · {item.type}</p>
-                    </div>
-                    <StatusBadge status={item.status as 'queued' | 'running' | 'completed' | 'failed'} />
-                    <span style={{ fontFamily: 'Space Mono', fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>{timeAgo(item.date)}</span>
+              <Link href="/dashboard/idea-lab" style={{ fontSize: '11px', color: '#00D9E8', textDecoration: 'none', fontWeight: 600 }}>
+                View validation details →
+              </Link>
+            </div>
+
+            {/* Pitch Activity */}
+            <div style={{ 
+              ...T.card, 
+              padding: '24px',
+              border: stats?.pitchStatus === 'Published' ? '1px solid rgba(0, 255, 136, 0.2)' : '1px solid rgba(255,255,255,0.07)',
+              background: stats?.pitchStatus === 'Published' ? 'rgba(0, 255, 136, 0.02)' : '#0C1018'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ 
+                  width: '40px', height: '40px', borderRadius: '10px', 
+                  background: stats?.pitchStatus === 'Published' ? 'rgba(0, 255, 136, 0.1)' : 'rgba(123, 92, 255, 0.1)', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                }}>
+                  <Rocket size={20} style={{ color: stats?.pitchStatus === 'Published' ? T.accent : '#7B5CFF' }} />
+                </div>
+                <div>
+                  <span style={{ ...T.mono, fontSize: '10px', color: T.dim, textTransform: 'uppercase' }}>Pitch Activity</span>
+                  <div style={{ ...T.syne, fontSize: '16px', fontWeight: 700 }}>
+                    {stats?.pitchStatus === 'Published' ? 'Public Profile' : 'Draft Mode'}
                   </div>
-                ))}
+                </div>
               </div>
-            )}
+              
+              {stats?.pitchStatus === 'Published' ? (
+                <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+                  <div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>{stats?.viewCount}</div>
+                    <div style={{ fontSize: '10px', color: T.dim, ...T.mono }}>VIEWS</div>
+                  </div>
+                  <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                  <div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: T.accent }}>{stats?.interestCount}</div>
+                    <div style={{ fontSize: '10px', color: T.dim, ...T.mono }}>INTEREST</div>
+                  </div>
+                </div>
+              ) : (
+                <p style={{ fontSize: '12px', color: T.dim, marginBottom: '16px', lineHeight: '1.4' }}>
+                  Publish your pitch to attract investors and track views.
+                </p>
+              )}
+
+              <Link href="/dashboard/pitch-room" style={{ fontSize: '11px', color: stats?.pitchStatus === 'Published' ? T.accent : '#7B5CFF', textDecoration: 'none', fontWeight: 600 }}>
+                {stats?.pitchStatus === 'Published' ? 'View analytics →' : 'Publish pitch now →'}
+              </Link>
+            </div>
+
           </div>
+
+          {/* Simple Recent Activity Placeholder or CTA */}
+          <div style={{ 
+            marginTop: '32px', 
+            ...T.card, 
+            padding: '32px', 
+            textAlign: 'center',
+            background: 'linear-gradient(180deg, #0C1018 0%, rgba(12, 16, 24, 0.5) 100%)'
+          }}>
+             <h3 style={{ ...T.syne, fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>What's next?</h3>
+             <p style={{ color: T.dim, fontSize: '14px', marginBottom: '24px' }}>
+                Your startup journey is tracked stage by stage. Follow the roadmap above to progress.
+             </p>
+             <Link href="/dashboard/chat" style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 24px',
+                background: T.accent,
+                color: '#000',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: 700,
+                ...T.syne
+             }}>
+                Talk to AI Advisor <ArrowRight size={16} />
+             </Link>
+          </div>
+
         </div>
       </div>
+      <style jsx>{`
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.4; }
+          100% { opacity: 1; }
+        }
+      `}</style>
     </div>
   )
 }

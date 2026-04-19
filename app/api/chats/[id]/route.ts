@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { connectDB } from '@/lib/mongodb'
 import Chat from '@/models/Chat'
+import User from '@/models/User'
+import ProblemFinderResult from '@/models/ProblemFinderResult'
 import { groq } from '@/lib/groq'
 
 const agentSystemPrompts: Record<string, string> = {
@@ -66,13 +68,33 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Chat not found' }, { status: 404 })
     }
 
+    let systemPrompt = agentSystemPrompts[chat!.agent] || agentSystemPrompts.supervisor
+
+    // Inject Problem Context if available
+    const user = await User.findById(session.user.id).lean()
+    if (user?.selectedProblemId) {
+      const problemResult = await ProblemFinderResult.findById(user.selectedProblemId).lean()
+      if (problemResult) {
+        const problem = problemResult.problems[user.selectedProblemIndex || 0]
+        systemPrompt += `\n\nACTIVE USER CONTEXT:
+The user is currently focused on solving this specific problem: "${problem.title}"
+Context: ${problem.reason}
+Identified Opportunity: ${problem.startupOpportunity}
+Target Group: ${problem.affectedGroup}
+Location: ${problemResult.location.district}, ${problemResult.location.state}, ${problemResult.location.country}
+Domain: ${problemResult.domain} > ${problemResult.subDomain}
+
+Please ensure your advice is tailored to this specific context whenever relevant.`
+      }
+    }
+
     try {
       const completion = await groq.chat.completions.create({
         model: 'llama-3.3-70b-versatile',
         messages: [
           {
             role: 'system',
-            content: agentSystemPrompts[chat!.agent] || agentSystemPrompts.supervisor,
+            content: systemPrompt,
           },
           ...chat!.messages.slice(0, -1).map((m: any) => ({
             role: m.role,

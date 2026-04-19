@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { connectDB } from '@/lib/mongodb'
-import AgentTask from '@/models/AgentTask'
-import Chat from '@/models/Chat'
+import User from '@/models/User'
+import ProblemFinderResult from '@/models/ProblemFinderResult'
 import IdeaValidation from '@/models/IdeaValidation'
+import BuildProject from '@/models/BuildProject'
+import Milestone from '@/models/Milestone'
+import PitchRoom from '@/models/PitchRoom'
 
 export async function GET() {
   try {
@@ -14,77 +17,97 @@ export async function GET() {
     }
 
     await connectDB()
-
     const userId = session.user.id
 
-    const [totalTasks, completedTasks, activeChats, totalIdeas, recentTasks, recentChats] =
-      await Promise.all([
-        AgentTask.countDocuments({ userId }),
-        AgentTask.countDocuments({ userId, status: 'completed' }),
-        Chat.countDocuments({ userId }),
-        IdeaValidation.countDocuments({ userId }),
-        AgentTask.find({ userId })
-          .sort({ createdAt: -1 })
-          .limit(4)
-          .select('taskName agent agentEmoji status createdAt'),
-        Chat.find({ userId })
-          .sort({ updatedAt: -1 })
-          .limit(4)
-          .select('title agent updatedAt'),
-      ])
-
-    // Combine recent activity
-    const taskActivity = recentTasks.map((t) => ({
-      id: t._id.toString(),
-      type: 'task',
-      label: t.taskName,
-      agent: t.agent,
-      emoji: t.agentEmoji,
-      status: t.status,
-      date: t.createdAt,
-    }))
-
-    const chatActivity = recentChats.map((c) => ({
-      id: c._id.toString(),
-      type: 'chat',
-      label: c.title,
-      agent: c.agent,
-      emoji: '💬',
-      status: 'active',
-      date: c.updatedAt,
-    }))
-
-    const recentActivity = [...taskActivity, ...chatActivity]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 8)
-
-    // Weekly activity: last 7 days
-    const today = new Date()
-    const weeklyActivity = []
-    for (let i = 6; i >= 0; i--) {
-      const day = new Date(today)
-      day.setDate(today.getDate() - i)
-      const start = new Date(day.setHours(0, 0, 0, 0))
-      const end = new Date(day.setHours(23, 59, 59, 999))
-
-      const count = await AgentTask.countDocuments({
-        userId,
-        createdAt: { $gte: start, $lte: end },
-      })
-
-      weeklyActivity.push({
-        day: start.toLocaleDateString('en-US', { weekday: 'short' }),
-        tasks: count,
-      })
+    // Fetch user and related data
+    const user = await User.findById(userId).lean()
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    // 1. Problem Selected
+    let problemTitle = 'None'
+    if (user.selectedProblemId) {
+      const pfr = await ProblemFinderResult.findById(user.selectedProblemId).lean()
+      if (pfr && pfr.problems) {
+        const idx = user.selectedProblemIndex || 0
+        problemTitle = pfr.problems[idx]?.title || 'Unknown Problem'
+      }
+    }
+
+    // 2. Idea Validated
+    const latestIdea = await IdeaValidation.findOne({ userId }).sort({ createdAt: -1 }).lean()
+
+    // 3. Blueprint Generated
+    const latestProject = await BuildProject.findOne({ userId }).sort({ createdAt: -1 }).lean()
+
+    // 4. Growth Started (Check for any milestones)
+    const milestones = await Milestone.find({ userId }).lean()
+    const completedMilestones = milestones.filter(m => m.status === 'completed').length
+
+    // 5. Pitch Published
+    const pitch = await PitchRoom.findOne({ userId }).lean()
+    let viewCount = 0
+    let interestCount = 0
+
+    if (pitch) {
+      viewCount = pitch.viewCount || 0
+      interestCount = await import('@/models/Notification').then(m => 
+        m.default.countDocuments({ userId, type: 'investor_interest', pitchId: pitch._id })
+      )
+    }
+
+    // JOURNEY TRACKER DATA
+    const journey = [
+      {
+        id: 'problem',
+        label: 'Problem Selected',
+        status: user.selectedProblemId ? 'completed' : 'in-progress',
+        summary: user.selectedProblemId ? `Selected: ${problemTitle}` : 'Find a problem to solve',
+        cta: '/dashboard/problem-finder',
+        ctaLabel: user.selectedProblemId ? 'Change Problem' : 'Find Problem'
+      },
+      {
+        id: 'idea',
+        label: 'Idea Validated',
+        status: latestIdea ? 'completed' : (user.selectedProblemId ? 'in-progress' : 'locked'),
+        summary: latestIdea ? `Score: ${latestIdea.validationScore}/100 - ${latestIdea.ideaTitle}` : 'Validate your startup idea',
+        cta: '/dashboard/idea-lab',
+        ctaLabel: latestIdea ? 'Re-validate' : 'Validate Idea'
+      },
+      {
+        id: 'blueprint',
+        label: 'Blueprint Generated',
+        status: latestProject ? 'completed' : (latestIdea ? 'in-progress' : 'locked'),
+        summary: latestProject ? `${latestProject.projectName} Blueprint Ready` : 'Generate technical blueprint',
+        cta: '/dashboard/build-studio',
+        ctaLabel: latestProject ? 'View Blueprint' : 'Generate'
+      },
+      {
+        id: 'growth',
+        label: 'Growth Started',
+        status: completedMilestones > 0 ? 'completed' : (latestProject ? 'in-progress' : 'locked'),
+        summary: milestones.length > 0 ? `${milestones.length} Milestones Active` : 'Set growth milestones',
+        cta: '/dashboard/growth/milestones',
+        ctaLabel: milestones.length > 0 ? 'View Track' : 'Start Growth'
+      },
+      {
+        id: 'pitch',
+        label: 'Pitch Published',
+        status: pitch?.isPublic ? 'completed' : (milestones.length > 0 ? 'in-progress' : 'locked'),
+        summary: pitch ? (pitch.isPublic ? 'Visible to Investors' : 'Draft mode') : 'Create your pitch room',
+        cta: '/dashboard/pitch-room',
+        ctaLabel: pitch ? (pitch.isPublic ? 'View Pitch' : 'Publish') : 'Create Pitch'
+      }
+    ]
+
     return NextResponse.json({
-      totalTasks,
-      completedTasks,
-      activeChats,
-      totalIdeas,
-      recentActivity,
-      weeklyActivity,
+      activeProblem: problemTitle,
+      latestIdeaScore: latestIdea?.validationScore || 0,
+      pitchStatus: pitch ? (pitch.isPublic ? 'Published' : 'Draft') : 'Not Started',
+      viewCount,
+      interestCount,
+      journey
     })
   } catch (error) {
     console.error('Dashboard stats error:', error)

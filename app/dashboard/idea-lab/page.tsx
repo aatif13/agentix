@@ -7,6 +7,8 @@ import TopBar from '@/components/TopBar'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import EmptyState from '@/components/EmptyState'
 import StatusBadge from '@/components/StatusBadge'
+import { useSelectedProblem } from '@/lib/useSelectedProblem'
+import { Target } from 'lucide-react'
 
 const INDUSTRIES = ['SaaS', 'FinTech', 'HealthTech', 'EdTech', 'E-Commerce', 'MarketTech', 'CleanTech', 'AI/ML', 'Web3', 'Other']
 
@@ -59,11 +61,10 @@ const CANVAS_FIELDS = [
 export default function IdeaLabPage() {
   const [ideas, setIdeas] = useState<IdeaValidation[]>([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [activeIdea, setActiveIdea] = useState<IdeaValidation | null>(null)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ ideaTitle: '', ideaDescription: '', industry: 'SaaS', targetMarket: '' })
+  const { problem } = useSelectedProblem()
 
   const fetchIdeas = useCallback(async () => {
     try {
@@ -97,21 +98,26 @@ export default function IdeaLabPage() {
     poll()
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     setError('')
     setAnalyzing(true)
-    setShowForm(false)
     try {
       const res = await fetch('/api/ideas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          problemContext: problem ? {
+            title: problem.title,
+            description: problem.reason,
+            opportunity: problem.startupOpportunity,
+            domain: problem.domain,
+            location: `${problem.location.district}, ${problem.location.state}`
+          } : null
+        }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); setAnalyzing(false); return }
       setIdeas(prev => [data.idea, ...prev])
-      setForm({ ideaTitle: '', ideaDescription: '', industry: 'SaaS', targetMarket: '' })
       pollIdea(data.idea._id)
     } catch {
       setError('Submission failed'); setAnalyzing(false)
@@ -135,6 +141,17 @@ export default function IdeaLabPage() {
       <div className="dashboard-main">
         <TopBar title="Idea Lab" subtitle="Validate your startup ideas with AI" />
         <div className="dashboard-content">
+          {problem && (
+            <div style={{ background: 'rgba(0,245,160,0.05)', border: '1px solid rgba(0,245,160,0.2)', borderRadius: 4, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ background: '#00F5A0', color: '#060A0F', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Target size={14} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Analyzing idea for problem: <span style={{ color: '#00F5A0' }}>{problem.title}</span></p>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Location: {problem.location.district}, {problem.location.state} • Domain: {problem.domain}</p>
+              </div>
+            </div>
+          )}
           {error && (
             <div style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.2)', borderRadius: 4, padding: '12px 16px', marginBottom: 20, color: 'var(--color-orange)', fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><AlertCircle size={14} />{error}</span>
@@ -142,100 +159,56 @@ export default function IdeaLabPage() {
             </div>
           )}
 
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-            <div>
-              <h2 style={{ fontSize: 18, fontWeight: 700 }}>Your Idea Validations</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 2 }}>{ideas.length} idea{ideas.length !== 1 ? 's' : ''} validated</p>
-            </div>
-            <button className="btn btn-primary" onClick={() => setShowForm(true)} style={{ fontSize: 13 }}>
-              <Plus size={15} /> Validate New Idea
-            </button>
-          </div>
-
-          {/* Idea Form Modal */}
-          {showForm && (
-            <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && setShowForm(false)}>
-              <div className="modal-box" style={{ maxWidth: 520 }}>
-                <div className="modal-header">
-                  <h2 className="modal-title">Validate a New Idea</h2>
-                  <button className="modal-close" onClick={() => setShowForm(false)}><X size={18} /></button>
-                </div>
-                <div className="modal-body">
-                  <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                      <label className="form-label">Idea Title</label>
-                      <input className="input" placeholder="e.g. AI-powered legal contract reviewer" value={form.ideaTitle} onChange={e => setForm({ ...form, ideaTitle: e.target.value })} required />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Idea Description</label>
-                      <textarea className="textarea" placeholder="Describe your startup idea in detail..." value={form.ideaDescription} onChange={e => setForm({ ...form, ideaDescription: e.target.value })} required rows={4} />
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                      <div className="form-group">
-                        <label className="form-label">Industry</label>
-                        <select className="select" value={form.industry} onChange={e => setForm({ ...form, industry: e.target.value })}>
-                          {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-                        </select>
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Target Market</label>
-                        <input className="input" placeholder="e.g. SMBs, developers" value={form.targetMarket} onChange={e => setForm({ ...form, targetMarket: e.target.value })} />
-                      </div>
-                    </div>
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
-                      <Lightbulb size={15} /> Validate Idea
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
+          {/* Empty State / Select Problem Action */}
+          {!problem && ideas.length === 0 && (
+            <EmptyState
+              icon={Target}
+              title="No problem selected"
+              description="Please select a problem in the Problem Finder first to begin validation."
+              action={{ label: 'Go to Problem Finder', onClick: () => window.location.href = '/dashboard/problem-finder' }}
+            />
           )}
 
-          {/* Analyzing state */}
-          {analyzing && (
-            <div className="card" style={{ textAlign: 'center', padding: '48px', marginBottom: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 20 }}>
-                <div className="typing-dot" /><div className="typing-dot" /><div className="typing-dot" />
-              </div>
-              <p style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>AI is analyzing your idea...</p>
-              <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Researching market size, competition, and feasibility</p>
-              <div style={{ marginTop: 24 }}>
-                <LoadingSkeleton type="card" count={4} />
-              </div>
+          {problem && !analyzing && (
+            <div className="card" style={{ padding: '32px', textAlign: 'center', marginBottom: 32, background: 'rgba(0,245,160,0.02)' }}>
+              <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Ready to Validate?</h2>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 24, maxWidth: 600, margin: '0 auto 24px' }}>
+                We'll analyze the feasibility, market size, and potential of solving: <br/>
+                <strong style={{ color: '#00F5A0' }}>"{problem.title}"</strong>
+              </p>
+              <button className="btn btn-primary" onClick={handleSubmit} style={{ fontSize: 15, padding: '12px 32px' }}>
+                Validate This Problem as a Startup Idea →
+              </button>
             </div>
           )}
 
           {/* Past ideas list */}
-          {loading ? <LoadingSkeleton type="row" count={3} /> : ideas.length === 0 && !analyzing ? (
-            <EmptyState
-              icon={Lightbulb}
-              title="No ideas validated yet"
-              description="Start by validating your first startup idea to get AI-powered insights."
-              action={{ label: 'Validate Your First Idea', onClick: () => setShowForm(true) }}
-            />
-          ) : (
+          {loading ? (
+            <LoadingSkeleton type="row" count={3} />
+          ) : ideas.length === 0 && !analyzing && problem ? (
+            <div style={{ textAlign: 'center', padding: '48px' }}>
+              <p style={{ color: 'var(--text-muted)' }}>No validations for this problem yet. Click the button above to start.</p>
+            </div>
+          ) : ideas.length > 0 && (
             <>
               {/* Ideas list */}
-              {ideas.length > 0 && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
-                  {ideas.map(idea => (
-                    <button key={idea._id} onClick={() => setActiveIdea(idea)} style={{
-                      display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
-                      background: activeIdea?._id === idea._id ? 'rgba(0,245,160,0.08)' : 'var(--surface)',
-                      border: `1px solid ${activeIdea?._id === idea._id ? 'rgba(0,245,160,0.3)' : 'var(--border)'}`,
-                      borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s',
-                    }}>
-                      <StatusBadge status={
-                        idea.status === 'pending' ? 'queued' :
-                        idea.status === 'analyzing' ? 'running' :
-                        idea.status === 'complete' ? 'completed' : 'queued'
-                      } />
-                      <span style={{ fontSize: 13, fontWeight: 500 }}>{idea.ideaTitle}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+                {ideas.map(idea => (
+                  <button key={idea._id} onClick={() => setActiveIdea(idea)} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
+                    background: activeIdea?._id === idea._id ? 'rgba(0,245,160,0.08)' : 'var(--surface)',
+                    border: `1px solid ${activeIdea?._id === idea._id ? 'rgba(0,245,160,0.3)' : 'var(--border)'}`,
+                    borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s',
+                  }}>
+                    <StatusBadge status={
+                      idea.status === 'pending' ? 'queued' :
+                      idea.status === 'analyzing' ? 'running' :
+                      idea.status === 'complete' ? 'completed' : 'queued'
+                    } />
+                    <span style={{ fontSize: 13, fontWeight: 500 }}>{idea.ideaTitle}</span>
+                  </button>
+                ))}
+              </div>
 
               {/* Active idea results */}
               {activeIdea && activeIdea.status === 'complete' && (

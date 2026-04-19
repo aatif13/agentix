@@ -4,11 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
-import { Zap, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
+import { Zap, Eye, EyeOff, AlertCircle, CheckCircle, Building2, TrendingUp } from 'lucide-react'
 
 export default function SignupPage() {
   const router = useRouter()
   const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [role, setRole] = useState<'founder' | 'investor'>('founder')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPw, setShowPw] = useState(false)
@@ -26,14 +27,13 @@ export default function SignupPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, email: normalizedEmail }),
+        body: JSON.stringify({ ...form, email: normalizedEmail, role }),
       })
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Registration failed')
         return
       }
-      // Auto-login after registration
       const signInRes = await signIn('credentials', {
         redirect: false,
         email: normalizedEmail,
@@ -43,7 +43,7 @@ export default function SignupPage() {
         setError('Account created! Please log in.')
         router.push('/login')
       } else {
-        router.push('/dashboard')
+        router.push(role === 'investor' ? '/investor/dashboard' : '/dashboard')
       }
     } catch {
       setError('Something went wrong. Please try again.')
@@ -60,7 +60,7 @@ export default function SignupPage() {
     <div className="grid-bg" style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
     }}>
-      <div style={{ width: '100%', maxWidth: 440 }}>
+      <div style={{ width: '100%', maxWidth: 460 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
@@ -73,6 +73,41 @@ export default function SignupPage() {
         <div className="card" style={{ padding: '32px' }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6 }}>Create your account</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>No credit card required · 14-day free trial</p>
+
+          {/* Role Selector */}
+          <div style={{ marginBottom: 24 }}>
+            <label className="form-label" style={{ marginBottom: 10, display: 'block' }}>I am a...</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {([
+                { value: 'founder', label: "I'm a Founder", icon: Building2, desc: 'Build & validate startups' },
+                { value: 'investor', label: "I'm an Investor", icon: TrendingUp, desc: 'Discover deal flow' },
+              ] as const).map(opt => {
+                const Icon = opt.icon
+                const active = role === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setRole(opt.value)}
+                    style={{
+                      background: active ? 'rgba(0,245,160,0.06)' : 'var(--elevated)',
+                      border: `1px solid ${active ? 'var(--color-green)' : 'var(--border)'}`,
+                      borderRadius: 6,
+                      padding: '14px 12px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.2s',
+                      outline: 'none',
+                    }}
+                  >
+                    <Icon size={18} style={{ color: active ? 'var(--color-green)' : 'var(--text-muted)', marginBottom: 6 }} />
+                    <p style={{ fontSize: 13, fontWeight: 600, color: active ? 'var(--color-green)' : 'var(--text-primary)', marginBottom: 2 }}>{opt.label}</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Space Mono' }}>{opt.desc}</p>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           {error && (
             <div style={{
@@ -143,8 +178,8 @@ export default function SignupPage() {
                 </div>
               )}
             </div>
-            <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%', justifyContent: 'center', marginTop: 8, padding: '12px 0' }}>
-              {loading ? <><span className="spinner" /> Creating account...</> : 'Create Account'}
+            <button type="submit" id="signup-submit-btn" className="btn btn-primary" disabled={loading} style={{ width: '100%', justifyContent: 'center', marginTop: 8, padding: '12px 0' }}>
+              {loading ? <><span className="spinner" /> Creating account...</> : `Create ${role === 'investor' ? 'Investor' : 'Founder'} Account`}
             </button>
           </form>
 
@@ -165,9 +200,9 @@ export default function SignupPage() {
           <button
             type="button"
             onClick={async () => {
-              await signIn('google', { 
+              await signIn('google', {
                 callbackUrl: '/dashboard',
-                redirect: true 
+                redirect: true
               })
             }}
             className="btn btn-outline"

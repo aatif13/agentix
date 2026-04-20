@@ -164,12 +164,12 @@ export default function SettingsPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '8px' }}>
                   <div style={{ position: 'relative' }}>
                     <div style={{ 
-                      width: '80px', height: '80px', borderRadius: '16px', 
-                      background: 'rgba(0, 245, 160, 0.12)', border: '2px solid rgba(0, 245, 160, 0.3)',
+                      width: '80px', height: '80px', borderRadius: '16px', overflow: 'hidden',
+                      background: profile.avatar ? 'transparent' : 'rgba(0, 245, 160, 0.12)', border: '2px solid rgba(0, 245, 160, 0.3)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '32px', fontWeight: 800, color: T.accent, fontFamily: 'Syne'
                     }}>
-                      {profile.name.charAt(0).toUpperCase() || '?'}
+                      {profile.avatar ? <img src={profile.avatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (profile.name ? profile.name.charAt(0).toUpperCase() : '?')}
                     </div>
                     <button onClick={handlePhotoClick} style={{ 
                       position: 'absolute', bottom: '-4px', right: '-4px', 

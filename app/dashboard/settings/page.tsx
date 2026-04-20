@@ -135,7 +135,7 @@ export default function SettingsPage() {
       <Sidebar />
       <div className="dashboard-main">
         <TopBar title="Founder Settings" subtitle="Configure your profile and professional preferences" />
-        <div className="dashboard-content" style={{ padding: '32px', maxWidth: '800px' }}>
+        <div className="dashboard-content" style={{ padding: '32px', maxWidth: '900px', margin: '0 auto' }}>
 
           {/* Tab Navigation */}
           <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: '32px' }}>
@@ -295,8 +295,8 @@ export default function SettingsPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {[
                   { id: 'investorViews', label: 'Email me when an investor views my pitch', desc: 'Instant notification whenever your profile is accessed by a verified investor' },
-                  { id: 'progressReminders', label: 'Weekly progress reminder', desc: 'A Sunday summary of your milestones and experiments for the week' },
-                  { id: 'problemSuggestions', label: 'New problem suggestions in my domain', desc: 'Get alerted when our AI agents find new high-potential problems in your preferred industry' }
+                  { id: 'progressReminders', label: 'Email me when I receive a new message', desc: 'Get notified by email when an investor sends you a message' },
+                  { id: 'problemSuggestions', label: 'Email me when an investor accepts my introduction', desc: 'Get notified when a founder accepts your introduction request' }
                 ].map(item => (
                   <div key={item.id} style={{ ...T.card, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ flex: 1 }}>

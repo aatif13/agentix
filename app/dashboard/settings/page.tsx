@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { 
   Save, User, Target, Bell, Briefcase, Send, Code, 
@@ -59,6 +59,18 @@ export default function SettingsPage() {
     }
   })
   const [loading, setLoading] = useState(true)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  const handlePhotoClick = () => fileInputRef.current?.click()
+  const handleFileChange = (e: any) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      setProfile({ ...profile, avatar: url })
+      setSelectedFile(file)
+    }
+  }
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -159,7 +171,7 @@ export default function SettingsPage() {
                     }}>
                       {profile.name.charAt(0).toUpperCase() || '?'}
                     </div>
-                    <button style={{ 
+                    <button onClick={handlePhotoClick} style={{ 
                       position: 'absolute', bottom: '-4px', right: '-4px', 
                       width: '28px', height: '28px', borderRadius: '50%', background: '#1A2535',
                       border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -167,6 +179,7 @@ export default function SettingsPage() {
                     }} title="Upload Photo">
                       <Camera size={14} />
                     </button>
+                    <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
                   </div>
                   <div>
                     <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '4px', fontFamily: 'Syne' }}>{profile.name || 'Founder Name'}</h2>

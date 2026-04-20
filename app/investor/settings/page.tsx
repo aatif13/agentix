@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { 
-  Save, User, Briefcase, Bell, Check, Loader2, 
+  Save, User, Briefcase, Bell, Check, Loader2, Camera,
   MapPin, Send, Globe, Info, Rocket
 } from 'lucide-react'
 import TopBar from '@/components/TopBar'
@@ -63,6 +63,18 @@ export default function InvestorSettingsPage() {
     }
   })
   const [loading, setLoading] = useState(true)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  const handlePhotoClick = () => fileInputRef.current?.click()
+  const handleFileChange = (e: any) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      setProfile({ ...profile, photo: url })
+      setSelectedFile(file)
+    }
+  }
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -150,11 +162,23 @@ export default function InvestorSettingsPage() {
         {activeTab === 'profile' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-              <div style={{ 
-                width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(0,245,160,0.1)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(0,245,160,0.3)'
-              }}>
-                <User size={32} style={{ color: T.accent }} />
+              <div style={{ position: 'relative' }}>
+                <div style={{ 
+                  width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden',
+                  background: profile.photo ? 'transparent' : 'rgba(0,245,160,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed rgba(0,245,160,0.3)'
+                }}>
+                  {profile.photo ? <img src={profile.photo} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <User size={32} style={{ color: T.accent }} />}
+                </div>
+                <button onClick={handlePhotoClick} style={{ 
+                  position: 'absolute', bottom: '-4px', right: '-4px', 
+                  width: '28px', height: '28px', borderRadius: '50%', background: '#1A2535',
+                  border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: T.dim, cursor: 'pointer'
+                }} title="Upload Photo">
+                  <Camera size={14} />
+                </button>
+                <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
               </div>
               <div>
                 <h3 style={{ fontSize: '18px', fontWeight: 800, fontFamily: 'Syne' }}>{profile.fullName || 'Investor Profile'}</h3>
@@ -272,7 +296,7 @@ export default function InvestorSettingsPage() {
             {[
               { id: 'newMatchingStartups', label: 'New Match Alerts', desc: 'Email me when a new startup fits my investment focus' },
               { id: 'watchlistUpdates', label: 'Watchlist Updates', desc: 'Email me when a startup I\'m watching updates their pitch' },
-              { id: 'weeklyDigest', label: 'Weekly Digest', desc: 'A weekly summary of deal flow and platform activity' }
+              { id: 'weeklyDigest', label: 'Email me when I receive a new message', desc: 'Get notified by email when a founder replies to your message' }
             ].map(item => (
               <div key={item.id} style={{ ...T.card, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>

@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Send, MessageSquare } from 'lucide-react'
+import InvestorSidebar from '@/components/InvestorSidebar'
+import TopBar from '@/components/TopBar'
 
-// Layout matching the chat CSS
 export default function InvestorMessagesPage() {
   const [threads, setThreads] = useState<any[]>([])
   const [activeThread, setActiveThread] = useState<string | null>(null)
@@ -118,111 +119,118 @@ export default function InvestorMessagesPage() {
   const activeThreadData = threads.find(t => t.threadId === activeThread)
 
   if (loading) {
-    return <div className="chat-container"><div className="chat-messages"><span className="spinner"></span></div></div>
+    return (
+      <div style={{display:'flex', height:'100%', width:'100%', margin:0, padding:0}}>
+        <div className="chat-messages"><span className="spinner"></span></div>
+      </div>
+    )
   }
 
   return (
-    <div className="chat-container" style={{ margin: '-28px' }}>
-      <div className="chat-sidebar">
-        <div className="chat-sidebar-header">
-          <h2 style={{ fontSize: '15px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <MessageSquare size={16} /> Messages
-          </h2>
-        </div>
-        <div className="chat-list">
-          {threads.length === 0 ? (
-            <div className="empty-state" style={{ padding: '20px', textAlign: 'center' }}>
-              <MessageSquare size={32} style={{ color: 'var(--text-muted)', marginBottom: 12 }} />
-              <p className="empty-desc" style={{ fontSize: '13px' }}>
-                No accepted introductions yet. Send introduction requests from the deal flow.
-              </p>
-            </div>
-          ) : (
-            threads.map(thread => (
-              <div
-                key={thread.threadId}
-                className={`chat-list-item ${activeThread === thread.threadId ? 'active' : ''}`}
-                style={{
-                  borderLeft: activeThread === thread.threadId ? '3px solid var(--color-green)' : '3px solid transparent'
-                }}
-                onClick={() => setActiveThread(thread.threadId)}
-              >
-                <div className="chat-item-title" style={{ fontSize: '14px', marginBottom: '2px' }}>
-                  {thread.startupName} 
+    <div style={{ display: 'flex', height: '100vh', background: '#0a0a0a' }}>
+      <InvestorSidebar />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <TopBar title="Messages" subtitle="Your founder conversations" />
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          {/* LEFT: thread list */}
+          <div style={{width:'280px', borderRight:'1px solid rgba(255,255,255,0.1)', overflowY:'auto'}}>
+            <div className="chat-list">
+              {threads.length === 0 ? (
+                <div className="empty-state" style={{ padding: '20px', textAlign: 'center' }}>
+                  <MessageSquare size={32} style={{ color: 'var(--text-muted)', marginBottom: 12 }} />
+                  <p className="empty-desc" style={{ fontSize: '13px' }}>
+                    No accepted introductions yet. Send introduction requests from the deal flow.
+                  </p>
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-primary)', opacity: 0.9, marginBottom: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {thread.lastMessage || 'Start the conversation...'}
-                </div>
-                <div className="chat-item-meta">
-                  <span className="chat-item-time">{timeAgo(thread.lastMessageAt)}</span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      <div className="chat-main">
-        {activeThreadData ? (
-          <>
-            <div className="chat-header">
-              <div style={{ width: 34, height: 34, borderRadius: 4, background: 'var(--elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700 }}>
-                {activeThreadData.startupName.charAt(0)}
-              </div>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>{activeThreadData.startupName}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{activeThreadData.founderName} · Founder</div>
-              </div>
-            </div>
-
-            <div className="chat-messages">
-              {messages.map(msg => {
-                const isFounder = msg.senderRole === 'founder'
-                return (
-                  <div key={msg._id} className={`msg ${isFounder ? 'msg-user' : ''}`}>
-                    <div className="msg-bubble" style={{
-                      background: isFounder ? 'var(--color-green)' : 'var(--elevated)',
-                      color: isFounder ? '#000' : 'var(--text-primary)',
-                      border: isFounder ? 'none' : '1px solid var(--border)'
-                    }}>
-                      <div style={{ fontSize: 14, lineHeight: 1.5 }}>
-                        {msg.content}
-                      </div>
-                      <div style={{ fontSize: 10, marginTop: 4, opacity: isFounder ? 0.7 : 0.5, textAlign: isFounder ? 'right' : 'left' }}>
-                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
+              ) : (
+                threads.map(thread => (
+                  <div
+                    key={thread.threadId}
+                    className={`chat-list-item ${activeThread === thread.threadId ? 'active' : ''}`}
+                    style={{
+                      borderLeft: activeThread === thread.threadId ? '3px solid var(--color-green)' : '3px solid transparent'
+                    }}
+                    onClick={() => setActiveThread(thread.threadId)}
+                  >
+                    <div className="chat-item-title" style={{ fontSize: '14px', marginBottom: '2px' }}>
+                      {thread.startupName} 
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-primary)', opacity: 0.9, marginBottom: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {thread.lastMessage || 'Start the conversation...'}
+                    </div>
+                    <div className="chat-item-meta">
+                      <span className="chat-item-time">{timeAgo(thread.lastMessageAt)}</span>
                     </div>
                   </div>
-                )
-              })}
-              <div ref={messagesEndRef} />
+                ))
+              )}
             </div>
-
-            <div className="chat-input-area">
-              <textarea
-                className="chat-textarea"
-                placeholder="Type a message..."
-                value={draft}
-                onChange={e => setDraft(e.target.value)}
-                onKeyDown={handleKeyDown}
-              />
-              <button
-                className="btn btn-primary"
-                style={{ padding: '10px 14px', height: '44px' }}
-                onClick={handleSend}
-                disabled={!draft.trim()}
-              >
-                <Send size={16} />
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="empty-state" style={{ height: '100%', margin: 'auto' }}>
-            <MessageSquare size={48} style={{ color: 'var(--border)', marginBottom: 16 }} />
-            <h3 className="empty-title" style={{ color: 'var(--text-muted)' }}>Select a thread</h3>
-            <p className="empty-desc">Choose an active conversation from the sidebar.</p>
           </div>
-        )}
+
+          {/* RIGHT: chat panel */}
+          <div style={{flex:1}}>
+            {activeThreadData ? (
+              <>
+                <div className="chat-header">
+                  <div style={{ width: 34, height: 34, borderRadius: 4, background: 'var(--elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700 }}>
+                    {activeThreadData.startupName.charAt(0)}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>{activeThreadData.startupName}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{activeThreadData.founderName} · Founder</div>
+                  </div>
+                </div>
+
+                <div className="chat-messages">
+                  {messages.map(msg => {
+                    const isFounder = msg.senderRole === 'founder'
+                    return (
+                      <div key={msg._id} className={`msg ${isFounder ? 'msg-user' : ''}`}>
+                        <div className="msg-bubble" style={{
+                          background: isFounder ? 'var(--color-green)' : 'var(--elevated)',
+                          color: isFounder ? '#000' : 'var(--text-primary)',
+                          border: isFounder ? 'none' : '1px solid var(--border)'
+                        }}>
+                          <div style={{ fontSize: 14, lineHeight: 1.5 }}>
+                            {msg.content}
+                          </div>
+                          <div style={{ fontSize: 10, marginTop: 4, opacity: isFounder ? 0.7 : 0.5, textAlign: isFounder ? 'right' : 'left' }}>
+                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <div className="chat-input-area">
+                  <textarea
+                    className="chat-textarea"
+                    placeholder="Type a message..."
+                    value={draft}
+                    onChange={e => setDraft(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    style={{ padding: '10px 14px', height: '44px' }}
+                    onClick={handleSend}
+                    disabled={!draft.trim()}
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="empty-state" style={{ height: '100%', margin: 'auto' }}>
+                <MessageSquare size={48} style={{ color: 'var(--border)', marginBottom: 16 }} />
+                <h3 className="empty-title" style={{ color: 'var(--text-muted)' }}>Select a thread</h3>
+                <p className="empty-desc">Choose an active conversation from the sidebar.</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -7,6 +7,7 @@ import TopBar from '@/components/TopBar'
 import { useSelectedProblem } from '@/lib/useSelectedProblem'
 import { Target, Download, Copy, RefreshCw, Layers, Database, Globe, Shield, PieChart, FileCode, CheckCircle2 } from 'lucide-react'
 import EmptyState from '@/components/EmptyState'
+import BuildAdvisorPanel from '@/components/build-studio/BuildAdvisorPanel'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface TechStackItem { layer: string; emoji: string; tool: string; reason: string; isFree: boolean }
@@ -200,6 +201,11 @@ export default function BuildStudioPage() {
                         <RefreshCw size={14} /> Re-generate
                       </button>
                     </div>
+                    {/* ── NEW: Build Advisor Agent ── */}
+                    <BuildAdvisorPanel 
+                      blueprint={blueprint} 
+                      problem={problem} 
+                    />
                   </div>
                 )}
               </div>

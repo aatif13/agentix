@@ -173,7 +173,7 @@ export default function IdeaLabPage() {
             <div className="card" style={{ padding: '32px', textAlign: 'center', marginBottom: 32, background: 'rgba(0,245,160,0.02)' }}>
               <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Ready to Validate?</h2>
               <p style={{ color: 'var(--text-muted)', marginBottom: 24, maxWidth: 600, margin: '0 auto 24px' }}>
-                We'll analyze the feasibility, market size, and potential of solving: <br/>
+                We'll analyze the feasibility, market size, and potential of solving: <br />
                 <strong style={{ color: '#00F5A0' }}>"{problem.title}"</strong>
               </p>
               <button className="btn btn-primary" onClick={handleSubmit} style={{ fontSize: 15, padding: '12px 32px' }}>
@@ -202,10 +202,10 @@ export default function IdeaLabPage() {
                   }}>
                     <StatusBadge status={
                       idea.status === 'pending' ? 'queued' :
-                      idea.status === 'analyzing' ? 'running' :
-                      idea.status === 'complete' ? 'completed' : 'queued'
+                        idea.status === 'analyzing' ? 'running' :
+                          idea.status === 'complete' ? 'completed' : 'queued'
                     } />
-                    <span style={{ fontSize: 13, fontWeight: 500 }}>{idea.ideaTitle}</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: '#E8EDF5' }}>{idea.ideaTitle}</span>
                   </button>
                 ))}
               </div>
@@ -252,7 +252,7 @@ export default function IdeaLabPage() {
                         {CANVAS_FIELDS.map(f => (
                           <div key={f.key} style={{ background: 'var(--elevated)', border: '1px solid var(--border)', borderRadius: 4, padding: '12px 14px' }}>
                             <p style={{ fontFamily: 'Space Mono', fontSize: 10, color: 'var(--color-cyan)', marginBottom: 6 }}>{f.label}</p>
-                            <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-muted)' }}>{activeIdea.leanCanvas[f.key] || '—'}</p>
+                            <p style={{ fontSize: 12, lineHeight: 1.6, color: '#A0ADBF' }}>{activeIdea.leanCanvas[f.key] || '—'}</p>
                           </div>
                         ))}
                       </div>

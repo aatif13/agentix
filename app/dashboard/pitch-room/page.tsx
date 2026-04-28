@@ -12,6 +12,8 @@ import {
   FileText, Globe, Send, AlertCircle, Loader2, Pencil,
   TrendingUp, BarChart3, Lightbulb, ShieldCheck,
 } from 'lucide-react'
+// ── NEW: AI Pitch Coach ───────────────────────────────────────────────────────
+import PitchCoachPanel from '@/components/pitch-coach/PitchCoachPanel'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface PitchFormData {
@@ -179,6 +181,8 @@ export default function PitchRoomPage() {
   const [isPublished, setIsPublished] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [pitchId, setPitchId] = useState('')
+  // ── NEW: AI Coach state ───────────────────────────────────────────────────
+  const [showCoach, setShowCoach] = useState(false)
 
   // ── Load existing pitch on mount
   useEffect(() => {
@@ -207,16 +211,16 @@ export default function PitchRoomPage() {
             isPublic: d.pitch.isPublic || false,
             viewCount: d.pitch.viewCount || 0,
           }))
-          
+
           if (d.pitch.isPublic) {
             setIsPublished(true)
-            fetchStats() // Fetch detailed stats if public
+            fetchStats()
           } else if (d.pitch.investorReport) {
             setStep(3)
           }
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingData(false))
   }, [])
 
@@ -240,15 +244,26 @@ export default function PitchRoomPage() {
         industry: prev.industry || problem.domain,
       }))
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [problem])
+
+  useEffect(() => {
+    if (!loadingData && problem && (!form.problemStatement || form.problemStatement.trim() === '')) {
+      setForm(prev => ({
+        ...prev,
+        problemStatement: `${problem.title}\n\nAffected Group: ${problem.affectedGroup}\nReason: ${problem.reason}`,
+        targetMarket: prev.targetMarket || problem.affectedGroup,
+        industry: prev.industry || problem.domain,
+      }))
+    }
+  }, [problem, loadingData])
 
   // ── Auto-fill email from session
   useEffect(() => {
     if (session?.user?.email && !form.founderEmail) {
       setForm(prev => ({ ...prev, founderEmail: prev.founderEmail || session.user?.email || '' }))
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session])
 
   const set = (key: keyof PitchFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -264,9 +279,9 @@ export default function PitchRoomPage() {
       })
     } catch { /* silent */ }
     finally { setSaving(false) }
-  }, [])
+  }, [form])
 
-  // ── Step 1 → Step 2: validate & save draft
+  // ── Step 1 → Step 2
   const goToStep2 = async () => {
     if (!form.startupName.trim()) { setError('Startup Name is required'); return }
     if (!form.problemStatement.trim()) { setError('Problem Statement is required'); return }
@@ -290,7 +305,6 @@ export default function PitchRoomPage() {
       const data = await res.json()
       if (data.investorReport) {
         setForm(prev => ({ ...prev, investorReport: data.investorReport }))
-        // Save report to DB immediately
         await fetch('/api/pitch-room', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -309,7 +323,6 @@ export default function PitchRoomPage() {
   const goToStep3 = async () => {
     if (!form.investorReport.trim()) { setError('Please generate an investor report first.'); return }
     setError('')
-    // Save the (possibly edited) report
     await saveDraft({ investorReport: form.investorReport })
     setStep(3)
     window.scrollTo(0, 0)
@@ -354,6 +367,7 @@ export default function PitchRoomPage() {
     transition: 'all 0.2s',
   })
 
+  // ── Loading screen
   if (loadingData) {
     return (
       <div style={T.page}>
@@ -386,21 +400,21 @@ export default function PitchRoomPage() {
               </div>
               <h2 style={{ ...T.syne, fontSize: 28, fontWeight: 800, marginBottom: 12 }}>✅ Your pitch is LIVE</h2>
               <p style={{ color: '#E8EDF5', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{form.startupName} is now visible to investors</p>
-              
+
               <div style={{ display: 'flex', gap: 24, padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', margin: '24px 0', justifyContent: 'center' }}>
                 <div style={{ textAlign: 'center' }}>
-                   <p style={{ fontSize: 20, fontWeight: 800, color: '#00F5A0' }}>{stats.viewCount}</p>
-                   <p style={{ fontSize: 11, color: '#6B7A91', ...T.mono }}>VIEWS</p>
+                  <p style={{ fontSize: 20, fontWeight: 800, color: '#00F5A0' }}>{stats.viewCount}</p>
+                  <p style={{ fontSize: 11, color: '#6B7A91', ...T.mono }}>VIEWS</p>
                 </div>
                 <div style={{ width: 1, background: 'rgba(255,255,255,0.1)' }} />
                 <div style={{ textAlign: 'center' }}>
-                   <p style={{ fontSize: 20, fontWeight: 800, color: '#FFB800' }}>{stats.watchlistCount}</p>
-                   <p style={{ fontSize: 11, color: '#6B7A91', ...T.mono }}>SAVES</p>
+                  <p style={{ fontSize: 20, fontWeight: 800, color: '#FFB800' }}>{stats.watchlistCount}</p>
+                  <p style={{ fontSize: 11, color: '#6B7A91', ...T.mono }}>SAVES</p>
                 </div>
                 <div style={{ width: 1, background: 'rgba(255,255,255,0.1)' }} />
                 <div style={{ textAlign: 'center' }}>
-                   <p style={{ fontSize: 20, fontWeight: 800, color: '#7B5CFF' }}>{stats.interestCount}</p>
-                   <p style={{ fontSize: 11, color: '#6B7A91', ...T.mono }}>INTEREST</p>
+                  <p style={{ fontSize: 20, fontWeight: 800, color: '#7B5CFF' }}>{stats.interestCount}</p>
+                  <p style={{ fontSize: 11, color: '#6B7A91', ...T.mono }}>INTEREST</p>
                 </div>
               </div>
 
@@ -408,11 +422,17 @@ export default function PitchRoomPage() {
                 <button onClick={() => { setSuccess(false); setIsPublished(false); setIsEditMode(true); setStep(1) }} style={{ ...T.btn, ...T.btnGreen }}>
                   <Pencil size={14} /> Edit Pitch
                 </button>
+                {/* ── NEW: Coach button on success screen ── */}
+                <button onClick={() => setShowCoach(true)} style={{ ...T.btn, background: 'rgba(14,165,233,0.12)', color: '#38bdf8', border: '1px solid rgba(14,165,233,0.3)' }}>
+                  <Sparkles size={14} /> AI Pitch Coach
+                </button>
               </div>
             </div>
           </div>
         </div>
         <PitchRoomStyles />
+        {/* ── NEW: Coach Drawer ── */}
+        {showCoach && <CoachDrawer form={form} onClose={() => setShowCoach(false)} />}
       </div>
     )
   }
@@ -426,83 +446,90 @@ export default function PitchRoomPage() {
           <TopBar title="Pitch Dashboard" subtitle="Manage your public visibility and stats" />
           <div style={T.body}>
             <div style={{ ...T.card, padding: 40, textAlign: 'center', marginBottom: 30, background: 'linear-gradient(135deg, #0C1018 0%, #111827 100%)' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 16 }}>
-                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00F5A0', boxShadow: '0 0 10px #00F5A0' }} />
-                 <span style={{ ...T.mono, fontSize: 12, color: '#00F5A0', fontWeight: 700 }}>PITCH IS LIVE</span>
-               </div>
-               <h1 style={{ ...T.syne, fontSize: 32, fontWeight: 800, marginBottom: 8 }}>{form.startupName}</h1>
-               <p style={{ color: '#6B7A91', fontSize: 15, marginBottom: 32 }}>{form.tagline}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', marginBottom: 16 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00F5A0', boxShadow: '0 0 10px #00F5A0' }} />
+                <span style={{ ...T.mono, fontSize: 12, color: '#00F5A0', fontWeight: 700 }}>PITCH IS LIVE</span>
+              </div>
+              <h1 style={{ ...T.syne, fontSize: 32, fontWeight: 800, marginBottom: 8 }}>{form.startupName}</h1>
+              <p style={{ color: '#6B7A91', fontSize: 15, marginBottom: 32 }}>{form.tagline}</p>
 
-               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, maxWidth: 600, margin: '0 auto 40px' }}>
-                  <div style={{ ...T.innerCard, padding: 24 }}>
-                     <Eye size={24} style={{ color: '#00F5A0', marginBottom: 12 }} />
-                     <p style={{ fontSize: 24, fontWeight: 800 }}>{stats.viewCount}</p>
-                     <p style={{ fontSize: 10, color: '#6B7A91', ...T.mono }}>VIEWS</p>
-                  </div>
-                  <div style={{ ...T.innerCard, padding: 24 }}>
-                     <Zap size={24} style={{ color: '#FFB800', marginBottom: 12 }} />
-                     <p style={{ fontSize: 24, fontWeight: 800 }}>{stats.watchlistCount}</p>
-                     <p style={{ fontSize: 10, color: '#6B7A91', ...T.mono }}>SAVES</p>
-                  </div>
-                  <div style={{ ...T.innerCard, padding: 24 }}>
-                     <TrendingUp size={24} style={{ color: '#7B5CFF', marginBottom: 12 }} />
-                     <p style={{ fontSize: 24, fontWeight: 800 }}>{stats.interestCount}</p>
-                     <p style={{ fontSize: 10, color: '#6B7A91', ...T.mono }}>INTEREST</p>
-                  </div>
-               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, maxWidth: 600, margin: '0 auto 40px' }}>
+                <div style={{ ...T.innerCard, padding: 24 }}>
+                  <Eye size={24} style={{ color: '#00F5A0', marginBottom: 12 }} />
+                  <p style={{ fontSize: 24, fontWeight: 800 }}>{stats.viewCount}</p>
+                  <p style={{ fontSize: 10, color: '#6B7A91', ...T.mono }}>VIEWS</p>
+                </div>
+                <div style={{ ...T.innerCard, padding: 24 }}>
+                  <Zap size={24} style={{ color: '#FFB800', marginBottom: 12 }} />
+                  <p style={{ fontSize: 24, fontWeight: 800 }}>{stats.watchlistCount}</p>
+                  <p style={{ fontSize: 10, color: '#6B7A91', ...T.mono }}>SAVES</p>
+                </div>
+                <div style={{ ...T.innerCard, padding: 24 }}>
+                  <TrendingUp size={24} style={{ color: '#7B5CFF', marginBottom: 12 }} />
+                  <p style={{ fontSize: 24, fontWeight: 800 }}>{stats.interestCount}</p>
+                  <p style={{ fontSize: 10, color: '#6B7A91', ...T.mono }}>INTEREST</p>
+                </div>
+              </div>
 
-               <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                 <button onClick={() => { setIsPublished(false); setIsEditMode(true); setStep(1) }} style={{ ...T.btn, ...T.btnGreen }}>
-                    <Pencil size={15} /> Edit Pitch
-                 </button>
-               </div>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                <button onClick={() => { setIsPublished(false); setIsEditMode(true); setStep(1) }} style={{ ...T.btn, ...T.btnGreen }}>
+                  <Pencil size={15} /> Edit Pitch
+                </button>
+                {/* ── NEW: Coach button on published dashboard ── */}
+                <button onClick={() => setShowCoach(true)} style={{ ...T.btn, background: 'rgba(14,165,233,0.12)', color: '#38bdf8', border: '1px solid rgba(14,165,233,0.3)' }}>
+                  <Sparkles size={15} /> AI Pitch Coach
+                </button>
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24 }}>
               <div style={{ ...T.card, padding: 32 }}>
-                 <SectionHeader icon={TrendingUp} title="Recent Investor Activity" color="#00F5A0" />
-                 {stats.recentActivity.length === 0 ? (
-                   <p style={{ padding: '20px 0', color: '#6B7A91', textAlign: 'center', fontSize: 14 }}>No activity yet. Keep refining your pitch!</p>
-                 ) : (
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                     {stats.recentActivity.map((item, i) => (
-                       <div key={i} style={{ display: 'flex', gap: 12, paddingBottom: 16, borderBottom: i < stats.recentActivity.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.type === 'interest' ? '#7B5CFF' : '#00F5A0', marginTop: 5, flexShrink: 0 }} />
-                         <div style={{ flex: 1 }}>
-                           <p style={{ fontSize: 14, color: '#E8EDF5', marginBottom: 4 }}>
-                             {item.type === 'interest' ? (
-                               <><strong>{item.investorName}</strong> from {item.firmName} sent you a message</>
-                             ) : (
-                               <><strong>{item.investorName}</strong> from {item.firmName} viewed your pitch</>
-                             )}
-                           </p>
-                           <p style={{ fontSize: 11, color: '#6B7A91', ...T.mono }}>
-                             {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                           </p>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                 )}
+                <SectionHeader icon={TrendingUp} title="Recent Investor Activity" color="#00F5A0" />
+                {stats.recentActivity.length === 0 ? (
+                  <p style={{ padding: '20px 0', color: '#6B7A91', textAlign: 'center', fontSize: 14 }}>No activity yet. Keep refining your pitch!</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {stats.recentActivity.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 12, paddingBottom: 16, borderBottom: i < stats.recentActivity.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.type === 'interest' ? '#7B5CFF' : '#00F5A0', marginTop: 5, flexShrink: 0 }} />
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontSize: 14, color: '#E8EDF5', marginBottom: 4 }}>
+                            {item.type === 'interest' ? (
+                              <><strong>{item.investorName}</strong> from {item.firmName} sent you a message</>
+                            ) : (
+                              <><strong>{item.investorName}</strong> from {item.firmName} viewed your pitch</>
+                            )}
+                          </p>
+                          <p style={{ fontSize: 11, color: '#6B7A91', ...T.mono }}>
+                            {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div style={{ ...T.card, padding: 32 }}>
-                 <SectionHeader icon={ShieldCheck} title="Visibility Settings" color="#00D9E8" />
-                 <p style={{ color: '#6B7A91', fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}>
-                   Your startup is currently discoverable by investors on the public deal flow feed.
-                 </p>
-                 <button onClick={() => { setIsPublished(false); setIsEditMode(true); setStep(3) }} style={{ ...T.btn, ...T.btnOutline, width: '100%', justifyContent: 'center' }}>
-                   Manage Visibility
-                 </button>
+                <SectionHeader icon={ShieldCheck} title="Visibility Settings" color="#00D9E8" />
+                <p style={{ color: '#6B7A91', fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}>
+                  Your startup is currently discoverable by investors on the public deal flow feed.
+                </p>
+                <button onClick={() => { setIsPublished(false); setIsEditMode(true); setStep(3) }} style={{ ...T.btn, ...T.btnOutline, width: '100%', justifyContent: 'center' }}>
+                  Manage Visibility
+                </button>
               </div>
             </div>
           </div>
         </div>
         <PitchRoomStyles />
+        {/* ── NEW: Coach Drawer ── */}
+        {showCoach && <CoachDrawer form={form} onClose={() => setShowCoach(false)} />}
       </div>
     )
   }
 
+  // ── Main multi-step form
   return (
     <div style={T.page}>
       <Sidebar />
@@ -731,7 +758,6 @@ export default function PitchRoomPage() {
                         </p>
                       </div>
                     </div>
-                    {/* Custom toggle */}
                     <div style={{
                       width: 52, height: 28, borderRadius: 14, transition: 'all 0.25s', flexShrink: 0,
                       background: form.isPublic ? '#00F5A0' : 'rgba(255,255,255,0.1)',
@@ -746,7 +772,6 @@ export default function PitchRoomPage() {
                     </div>
                   </div>
 
-                  {/* Stats Bar & Attention Badge */}
                   <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <div style={{ display: 'flex', gap: 24, padding: '16px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -789,7 +814,6 @@ export default function PitchRoomPage() {
                     border: '1px solid rgba(0,245,160,0.15)',
                     position: 'relative', overflow: 'hidden',
                   }}>
-                    {/* Ambient glow */}
                     <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,245,160,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
@@ -864,9 +888,14 @@ export default function PitchRoomPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                {/* ── Step 3 bottom bar with NEW Coach button ── */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                   <button onClick={() => { setStep(2); setError('') }} style={{ ...T.btn, ...T.btnOutline }}>
                     ← Back to Report
+                  </button>
+                  {/* ── NEW: Coach button in step 3 ── */}
+                  <button onClick={() => setShowCoach(true)} style={{ ...T.btn, background: 'rgba(14,165,233,0.12)', color: '#38bdf8', border: '1px solid rgba(14,165,233,0.3)' }}>
+                    <Sparkles size={15} /> AI Pitch Coach
                   </button>
                   <button
                     id="publishPitchBtn"
@@ -885,8 +914,57 @@ export default function PitchRoomPage() {
 
           </div>
         </div>
+
+        <PitchRoomStyles />
       </div>
-      <PitchRoomStyles />
+
+      {/* ══════════════ NEW: AI Pitch Coach Drawer ══════════════ */}
+      {showCoach && <CoachDrawer form={form} onClose={() => setShowCoach(false)} />}
+    </div>
+  )
+}
+
+// ── CoachDrawer — self-contained drawer wrapper ───────────────────────────────
+function CoachDrawer({ form, onClose }: { form: PitchFormData; onClose: () => void }) {
+  const pitchContent = [
+    form.problemStatement && `PROBLEM:\n${form.problemStatement}`,
+    form.solution && `SOLUTION:\n${form.solution}`,
+    form.uniqueValueProposition && `UNIQUE VALUE PROPOSITION:\n${form.uniqueValueProposition}`,
+    form.businessModel && `BUSINESS MODEL:\n${form.businessModel}`,
+    form.traction && `TRACTION:\n${form.traction}`,
+    form.teamDetails && `TEAM:\n${form.teamDetails}`,
+    form.fundingAsk && `FUNDING ASK: $${Number(form.fundingAsk).toLocaleString()}`,
+    form.useOfFunds && `USE OF FUNDS:\n${form.useOfFunds}`,
+  ].filter(Boolean).join('\n\n')
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.65)',
+        zIndex: 200,
+        display: 'flex',
+        justifyContent: 'flex-end',
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: 560,
+          height: '100%',
+          animation: 'slideInRight 0.22s ease',
+          zIndex: 210,
+        }}
+      >
+        <PitchCoachPanel
+          pitchContent={pitchContent}
+          startupName={form.startupName}
+          stage={form.stage}
+          industry={form.industry}
+          onClose={onClose}
+        />
+      </div>
     </div>
   )
 }
@@ -899,6 +977,7 @@ function PitchRoomStyles() {
       @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes spin { to { transform: rotate(360deg); } }
       @keyframes reportProgress { from { width: 0% } to { width: 100% } }
+      @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
       @keyframes pulseGlow {
         0% { box-shadow: 0 0 0 0 rgba(0,245,160,0.2); transform: scale(1); }
         50% { box-shadow: 0 0 15px 0 rgba(0,245,160,0.4); transform: scale(1.02); }

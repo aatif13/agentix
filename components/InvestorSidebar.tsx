@@ -22,6 +22,7 @@ const navItems = [
   { href: '/investor/deal-flow', label: 'Deal Flow', icon: Telescope },
   { href: '/investor/watchlist', label: 'Watchlist', icon: Bookmark },
   { href: '/investor/insights', label: 'AI Insights', icon: Lightbulb },
+  { href: '/investor/messages', label: 'Messages', icon: MessageSquare },
   { href: '/investor/settings', label: 'Settings', icon: Settings },
 ]
 

@@ -6,10 +6,11 @@ import Link from 'next/link'
 import {
   ArrowLeft, BookmarkPlus, BookmarkCheck, Send, X,
   Target, TrendingUp, Users, DollarSign, Zap, BarChart3, Trophy,
-  Rocket, FileText
+  Rocket, FileText, Sparkles
 } from 'lucide-react'
 import TopBar from '@/components/TopBar'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
+import DealFlowPanel from '@/components/deal-flow/DealFlowPanel'
 
 interface Pitch {
   _id: string
@@ -45,6 +46,8 @@ export default function StartupDetailPage() {
   const [interestLoading, setInterestLoading] = useState(false)
   const [interestSent, setInterestSent] = useState(false)
   const [error, setError] = useState('')
+  const [showDealFlow, setShowDealFlow] = useState(false)
+  const [investorProfile, setInvestorProfile] = useState<any>(null)
 
   useEffect(() => {
     if (!id) return
@@ -56,6 +59,12 @@ export default function StartupDetailPage() {
       })
       .catch(() => router.push('/investor/deal-flow'))
       .finally(() => setLoading(false))
+
+    // Fetch full investor profile for the agent
+    fetch('/api/investor/settings')
+      .then(r => r.json())
+      .then(data => setInvestorProfile(data.profile))
+      .catch(e => console.error('Profile fetch error:', e))
   }, [id, router])
 
   const toggleWatchlist = async () => {
@@ -187,6 +196,28 @@ export default function StartupDetailPage() {
             >
               {pitch.isWatchlisted ? <BookmarkCheck size={15} style={{ color: 'var(--color-green)' }} /> : <BookmarkPlus size={15} />}
               {pitch.isWatchlisted ? 'Watchlisted' : 'Add to Watchlist'}
+            </button>
+            <button
+              onClick={() => setShowDealFlow(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 20px',
+                borderRadius: 8,
+                border: '1px solid rgba(123,92,255,0.4)',
+                background: 'rgba(123,92,255,0.12)',
+                color: '#A78BFA',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: "'Space Mono', monospace",
+                letterSpacing: '0.04em',
+                transition: 'all 0.2s',
+              }}
+            >
+              <Sparkles size={14} />
+              AI Analysis
             </button>
           </div>
         </div>
@@ -381,7 +412,42 @@ export default function StartupDetailPage() {
           </div>
         )}
 
+        {showDealFlow && (
+          <div
+            onClick={() => setShowDealFlow(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.65)',
+              zIndex: 50,
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: 580,
+                height: '100%',
+                animation: 'slideInFromRight 0.22s ease',
+              }}
+            >
+              <DealFlowPanel
+                startupData={pitch}
+                investorProfile={investorProfile}
+                onClose={() => setShowDealFlow(false)}
+              />
+            </div>
+          </div>
+        )}
+
       </div>
+      <style jsx>{`
+        @keyframes slideInFromRight { 
+          from { transform: translateX(100%); } 
+          to { transform: translateX(0); } 
+        }
+      `}</style>
     </>
   )
 }

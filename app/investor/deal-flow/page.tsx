@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { Search, SlidersHorizontal, BookmarkPlus, BookmarkCheck, ArrowUpRight, TrendingUp, Rocket, DollarSign } from 'lucide-react'
+import { Search, SlidersHorizontal, BookmarkPlus, BookmarkCheck, ArrowUpRight, TrendingUp, Rocket, DollarSign, Sparkles, Loader2 } from 'lucide-react'
 import TopBar from '@/components/TopBar'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
+import DealFlowPanel from '@/components/deal-flow/DealFlowPanel'
 
 interface Pitch {
   _id: string
@@ -51,6 +52,13 @@ export default function DealFlowPage() {
   const [watchlistLoading, setWatchlistLoading] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
+  // AI Agent State
+  const [showDealFlow, setShowDealFlow] = useState<string | null>(null)
+  const [investorProfile, setInvestorProfile] = useState<any>(null)
+  const [fullStartupData, setFullStartupData] = useState<any>(null)
+  const [fetchingFull, setFetchingFull] = useState(false)
+  const [compareStartup, setCompareStartup] = useState<any | null>(null)
+
   const fetchPitches = useCallback(async () => {
     setLoading(true)
     try {
@@ -66,6 +74,45 @@ export default function DealFlowPage() {
   }, [industry, sort])
 
   useEffect(() => { fetchPitches() }, [fetchPitches])
+
+  // Fetch Investor Profile
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('/api/investor/settings')
+        if (res.ok) {
+          const data = await res.json()
+          setInvestorProfile(data.profile)
+        }
+      } catch (e) {
+        console.error('Failed to fetch investor profile:', e)
+      }
+    }
+    fetchProfile()
+  }, [])
+
+  // Fetch Full Startup Data when agent is opened
+  useEffect(() => {
+    if (!showDealFlow) {
+      setFullStartupData(null)
+      return
+    }
+    const fetchFullData = async () => {
+      setFetchingFull(true)
+      try {
+        const res = await fetch(`/api/investor/startup/${showDealFlow}`)
+        if (res.ok) {
+          const data = await res.json()
+          setFullStartupData(data)
+        }
+      } catch (e) {
+        console.error('Failed to fetch full startup data:', e)
+      } finally {
+        setFetchingFull(false)
+      }
+    }
+    fetchFullData()
+  }, [showDealFlow])
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type })
@@ -174,6 +221,48 @@ export default function DealFlowPage() {
             </button>
           ))}
         </div>
+
+        {/* Compare Banner */}
+        {compareStartup && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 20px',
+            marginBottom: 20,
+            borderRadius: 8,
+            background: 'rgba(0,217,232,0.05)',
+            border: '1px solid rgba(0,217,232,0.2)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: '#00D9E8',
+                boxShadow: '0 0 8px #00D9E8'
+              }} />
+              <span style={{ fontSize: 13, color: '#00D9E8' }}>
+                <strong>{compareStartup.startupName}</strong> selected for 
+                comparison — open any startup&apos;s AI Analysis and 
+                click the Compare tab
+              </span>
+            </div>
+            <button
+              onClick={() => setCompareStartup(null)}
+              style={{
+                background: 'none',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 6,
+                color: '#6B7A91',
+                cursor: 'pointer',
+                fontSize: 11,
+                padding: '4px 10px',
+                fontFamily: "'Space Mono', monospace",
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        )}
 
         {/* Cards Grid */}
         {loading ? (
@@ -289,6 +378,56 @@ export default function DealFlowPage() {
                   >
                     {pitch.isWatchlisted ? <BookmarkCheck size={16} /> : <BookmarkPlus size={16} />}
                   </button>
+                  <button
+                    onClick={() => setShowDealFlow(pitch._id)}
+                    style={{
+                      padding: '9px 12px',
+                      background: 'rgba(123,92,255,0.15)',
+                      border: '1px solid #7B5CFF',
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                      color: '#A78BFA',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      transition: 'all 0.2s',
+                    }}
+                    title="AI Analysis"
+                  >
+                    <Sparkles size={13} /> AI Analysis
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCompareStartup(prev =>
+                        prev?._id === pitch._id ? null : pitch
+                      );
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '7px 14px',
+                      borderRadius: 7,
+                      border: compareStartup?._id === pitch._id
+                        ? '1px solid rgba(0,217,232,0.5)'
+                        : '1px solid rgba(255,255,255,0.1)',
+                      background: compareStartup?._id === pitch._id
+                        ? 'rgba(0,217,232,0.12)'
+                        : 'rgba(255,255,255,0.04)',
+                      color: compareStartup?._id === pitch._id ? '#00D9E8' : '#6B7A91',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: "'Space Mono', monospace",
+                      letterSpacing: '0.04em',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {compareStartup?._id === pitch._id ? '✓ Selected' : '+ Compare'}
+                  </button>
                 </div>
               </div>
             ))}
@@ -296,10 +435,47 @@ export default function DealFlowPage() {
         )}
       </div>
 
+      {showDealFlow && (() => {
+        const pitch = pitches.find(s => s._id === showDealFlow)
+        if (!pitch) return null
+        return (
+          <div 
+            onClick={() => setShowDealFlow(null)}
+            style={{
+              position: 'fixed', inset: 0,
+              background: 'rgba(0,0,0,0.65)',
+              zIndex: 50,
+              display: 'flex',
+              justifyContent: 'flex-end'
+            }}
+          >
+            <div 
+              onClick={e => e.stopPropagation()}
+              style={{ width: 580, height: '100%', animation: 'slideInFromRight 0.22s ease' }}
+            >
+              <DealFlowPanel
+                startupData={fullStartupData || pitch}
+                investorProfile={investorProfile}
+                secondStartup={
+                  compareStartup && compareStartup._id !== (fullStartupData?._id || pitch._id)
+                    ? compareStartup
+                    : undefined
+                }
+                onClose={() => setShowDealFlow(null)}
+              />
+            </div>
+          </div>
+        )
+      })()}
+
       <style jsx>{`
         @keyframes slideUp {
           from { transform: translateY(20px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slideInFromRight { 
+          from { transform: translateX(100%); } 
+          to { transform: translateX(0); } 
         }
       `}</style>
     </>

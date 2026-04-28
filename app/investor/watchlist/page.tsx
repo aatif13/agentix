@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Bookmark, BookmarkCheck, ArrowUpRight, TrendingUp, DollarSign, Rocket } from 'lucide-react'
+import { Bookmark, BookmarkCheck, ArrowUpRight, TrendingUp, DollarSign, Rocket, Sparkles } from 'lucide-react'
 import TopBar from '@/components/TopBar'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
+import DealFlowPanel from '@/components/deal-flow/DealFlowPanel'
 
 interface Pitch {
   _id: string
@@ -24,6 +25,8 @@ export default function WatchlistPage() {
   const [pitches, setPitches] = useState<Pitch[]>([])
   const [loading, setLoading] = useState(true)
   const [removingId, setRemovingId] = useState<string | null>(null)
+  const [showDealFlow, setShowDealFlow] = useState<string | null>(null)
+  const [investorProfile, setInvestorProfile] = useState<any>(null)
 
   const fetchWatchlist = async () => {
     setLoading(true)
@@ -38,7 +41,14 @@ export default function WatchlistPage() {
     }
   }
 
-  useEffect(() => { fetchWatchlist() }, [])
+  useEffect(() => { 
+    fetchWatchlist() 
+    // Fetch profile for the agent
+    fetch('/api/investor/settings')
+      .then(r => r.json())
+      .then(data => setInvestorProfile(data.profile))
+      .catch(e => console.error(e))
+  }, [])
 
   const removeFromWatchlist = async (pitchId: string) => {
     setRemovingId(pitchId)
@@ -166,6 +176,28 @@ export default function WatchlistPage() {
                     >
                       <BookmarkCheck size={16} />
                     </button>
+                    <button
+                      onClick={() => setShowDealFlow(pitch._id)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '7px 14px',
+                        borderRadius: 7,
+                        border: '1px solid rgba(123,92,255,0.35)',
+                        background: 'rgba(123,92,255,0.1)',
+                        color: '#A78BFA',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontFamily: "'Space Mono', monospace",
+                        letterSpacing: '0.04em',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <Sparkles size={12} />
+                      AI Analysis
+                    </button>
                   </div>
                 </div>
               ))}
@@ -181,6 +213,46 @@ export default function WatchlistPage() {
           </div>
         )}
       </div>
+
+      {showDealFlow && (() => {
+        const startup = pitches.find(s => s._id === showDealFlow)
+        if (!startup) return null
+        return (
+          <div
+            onClick={() => setShowDealFlow(null)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.65)',
+              zIndex: 50,
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: 580,
+                height: '100%',
+                animation: 'slideInFromRight 0.22s ease',
+              }}
+            >
+              <DealFlowPanel
+                startupData={startup}
+                investorProfile={investorProfile}
+                onClose={() => setShowDealFlow(null)}
+              />
+            </div>
+          </div>
+        )
+      })()}
+
+      <style jsx>{`
+        @keyframes slideInFromRight { 
+          from { transform: translateX(100%); } 
+          to { transform: translateX(0); } 
+        }
+      `}</style>
     </>
   )
 }

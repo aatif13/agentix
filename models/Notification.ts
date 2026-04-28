@@ -5,6 +5,7 @@ export interface INotification extends Document {
   type: 'investor_interest' | 'pitch_viewed' | 'message' | 'startup_match' | 'startup_update'
   title: string
   message: string
+  fromUserId?: mongoose.Types.ObjectId
   fromName?: string
   fromEmail?: string
   firmName?: string
@@ -19,6 +20,7 @@ const NotificationSchema: Schema = new Schema({
   type: { type: String, enum: ['investor_interest', 'pitch_viewed', 'message', 'startup_match', 'startup_update'], required: true },
   title: { type: String, required: true },
   message: { type: String, required: true },
+  fromUserId: { type: Schema.Types.ObjectId, ref: 'User' },
   fromName: { type: String },
   fromEmail: { type: String },
   firmName: { type: String },

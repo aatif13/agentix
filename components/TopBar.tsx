@@ -1,5 +1,7 @@
+'use client'
+
 import { useState, useEffect, useRef } from 'react'
-import { Bell, Search, Check, Clock, User as UserIcon } from 'lucide-react'
+import { Bell, Check, Clock, User as UserIcon } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 
@@ -139,11 +141,7 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
         {subtitle && <p className="topbar-subtitle">{subtitle}</p>}
       </div>
       <div className="topbar-right">
-        <div className="search-box">
-          <Search size={14} style={{ color: 'var(--text-muted)' }} />
-          <input type="text" placeholder="Search..." className="search-input" />
-        </div>
-        
+
         <div style={{ position: 'relative' }} ref={dropdownRef}>
           <button 
             className="icon-btn" 

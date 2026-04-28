@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import Sidebar from '@/components/Sidebar'
 import TopBar from '@/components/TopBar'
-import { Search, Copy, CheckCircle, Target } from 'lucide-react'
+import { Search, Copy, CheckCircle, Target, Sparkles } from 'lucide-react'
+import ProblemResearcherPanel from '@/components/problem-finder/ProblemResearcherPanel'
 
 // --- CONSTANTS ---
 
@@ -711,6 +712,7 @@ export default function ProblemFinderPage() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
   const [selectedProblem, setSelectedProblem] = useState<{ id: string; index: number } | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [researchProblem, setResearchProblem] = useState<Problem | null>(null)
 
   // Location
   const [country, setCountry] = useState('')
@@ -1231,6 +1233,25 @@ export default function ProblemFinderPage() {
                             >
                               <Copy size={10} /> {copiedIndex === idx ? 'Copied!' : 'Copy Info'}
                             </button>
+                            <button
+                              onClick={() => setResearchProblem(p)}
+                              style={{ 
+                                ...s.btn, 
+                                fontSize: 10, 
+                                padding: '4px 12px',
+                                marginTop: 4,
+                                width: 120,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                justifyContent: 'center',
+                                background: 'rgba(0,245,160,0.08)',
+                                color: '#00F5A0',
+                                border: '1px solid rgba(0,245,160,0.25)',
+                              }}
+                            >
+                              <Sparkles size={10} /> Deep Research
+                            </button>
                           </div>
                         </div>
 
@@ -1264,12 +1285,52 @@ export default function ProblemFinderPage() {
         </div>
       </div>
 
+      {researchProblem && (
+        <div
+          onClick={() => setResearchProblem(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            zIndex: 50,
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 520,
+              height: '100%',
+              animation: 'slideInRight 0.22s ease',
+            }}
+          >
+            <ProblemResearcherPanel
+              problem={researchProblem}
+              location={{ 
+                country, 
+                state: stateVal, 
+                district, 
+                region 
+              }}
+              domain={domain}
+              subDomain={subDomain}
+              onClose={() => setResearchProblem(null)}
+            />
+          </div>
+        </div>
+      )}
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
         @keyframes progress { from { width: 0% } to { width: 100% } }
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(12px) }
           to   { opacity: 1; transform: translateY(0) }
+        }
+        @keyframes slideInRight { 
+          from { transform: translateX(100%); } 
+          to { transform: translateX(0); } 
         }
         select option { background: #0C1018; color: #E8EDF5; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }

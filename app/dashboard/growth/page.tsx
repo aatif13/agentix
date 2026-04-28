@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import Sidebar from '@/components/Sidebar'
 import TopBar from '@/components/TopBar'
-import { Target, TrendingUp, Plus, Calendar, Search, Mail, FileText, Zap, FlaskConical, Download, CheckSquare, Square, ChevronRight, BarChart3, Clock, ArrowRight, Share2, MessageSquare, AlertCircle, X, ChevronDown, ChevronUp, Globe, Hash, Rocket, BarChart2 } from 'lucide-react'
+import { Target, TrendingUp, Plus, Calendar, Search, Mail, FileText, Zap, FlaskConical, Download, CheckSquare, Square, ChevronRight, BarChart3, Clock, ArrowRight, Share2, MessageSquare, AlertCircle, X, ChevronDown, ChevronUp, Globe, Hash, Rocket, BarChart2, Sparkles } from 'lucide-react'
 import { useSelectedProblem } from '@/lib/useSelectedProblem'
 import EmptyState from '@/components/EmptyState'
+import GrowthAdvisorPanel from '@/components/growth/GrowthAdvisorPanel'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Post { day: string; platform: string; topic: string; hook: string; cta: string }
@@ -166,6 +167,7 @@ export default function GrowthEnginePage() {
   const { problem } = useSelectedProblem()
   const [activeTab, setActiveTab] = useState('calendar')
   const [showForm, setShowForm] = useState(false)
+  const [showAdvisor, setShowAdvisor] = useState(false)
 
   // Past plans
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([])
@@ -267,70 +269,70 @@ export default function GrowthEnginePage() {
               )}
             </div>
 
-              {/* ── MAIN AREA ── */}
-              <div style={{ flex: 1, minWidth: 0 }}>
+            {/* ── MAIN AREA ── */}
+            <div style={{ flex: 1, minWidth: 0 }}>
 
-                {/* ── FORM/EMPTY STATE ── */}
-                {isFormView && (
-                  <div style={{ ...T.card, padding: 40, width: '100%' }}>
-                    {!problem ? (
-                      <EmptyState
-                        icon={Target}
-                        title="No problem selected"
-                        description="Please select a problem in the Problem Finder first to generate a growth strategy."
-                        action={{ label: 'Go to Problem Finder', onClick: () => window.location.href = '/dashboard/problem-finder' }}
-                      />
-                    ) : (
-                      <div style={{ textAlign: 'center', maxWidth: 500, margin: '0 auto' }}>
-                        <div style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(0,245,160,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,245,160,0.2)', margin: '0 auto 24px' }}>
-                          <TrendingUp size={32} style={{ color: '#00F5A0' }} />
-                        </div>
-                        <h2 style={{ ...T.syne, fontSize: 24, fontWeight: 800, marginBottom: 12 }}>Build Your Growth Plan</h2>
-                        <p style={{ fontSize: 14, color: '#6B7A91', lineHeight: 1.6, marginBottom: 32 }}>
-                          We will generate a multi-channel growth strategy, content calendar, and SEO playbook tailored for: <br/>
-                          <strong style={{ color: '#00F5A0' }}>"{problem.title}"</strong>
-                        </p>
-
-                        {loading ? (
-                          <div style={{ padding: '16px 0' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 14 }}>
-                              <Zap size={14} style={{ color: '#00F5A0', animation: 'pulse 1s ease-in-out infinite' }} />
-                              <span style={{ fontSize: 13, color: '#00F5A0', ...T.mono }}>Generating Strategy…</span>
-                            </div>
-                            <div style={{ height: 4, background: 'rgba(255,255,255,0.07)', borderRadius: 2, overflow: 'hidden' }}>
-                              <div style={{ height: '100%', background: 'linear-gradient(90deg, #00F5A0, #00D9E8)', borderRadius: 2, animation: 'growProgress 2s linear infinite' }} />
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={handleGenerate}
-                            style={{ ...T.btn, ...T.btnGreen, width: '100%', justifyContent: 'center', padding: '16px 24px', fontSize: 14 }}
-                          >
-                            <Zap size={18} />
-                            Generate Growth Strategy ⚡
-                          </button>
-                        )}
-
-                        {error && (
-                          <div style={{ marginTop: 20, padding: 12, background: 'rgba(255,107,53,0.1)', border: '1px solid rgba(255,107,53,0.2)', borderRadius: 6, color: '#FF6B35', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-                             <AlertCircle size={15} /> {error}
-                          </div>
-                        )}
-
-                        {strategy && (
-                          <div style={{ marginTop: 32, textAlign: 'left' }}>
-                            <div style={{ ...T.label, marginBottom: 12 }}>Your Growth Strategy</div>
-                            <div style={{ ...T.card, background: 'rgba(0,245,160,0.03)', border: '1px solid rgba(0,245,160,0.15)', padding: 24 }}>
-                               <pre style={{ whiteSpace: 'pre-wrap', fontSize: 14, color: '#A0ADBF', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif" }}>
-                                 {strategy}
-                               </pre>
-                            </div>
-                          </div>
-                        )}
+              {/* ── FORM/EMPTY STATE ── */}
+              {isFormView && (
+                <div style={{ ...T.card, padding: 40, width: '100%' }}>
+                  {!problem ? (
+                    <EmptyState
+                      icon={Target}
+                      title="No problem selected"
+                      description="Please select a problem in the Problem Finder first to generate a growth strategy."
+                      action={{ label: 'Go to Problem Finder', onClick: () => window.location.href = '/dashboard/problem-finder' }}
+                    />
+                  ) : (
+                    <div style={{ textAlign: 'center', maxWidth: 500, margin: '0 auto' }}>
+                      <div style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(0,245,160,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,245,160,0.2)', margin: '0 auto 24px' }}>
+                        <TrendingUp size={32} style={{ color: '#00F5A0' }} />
                       </div>
-                    )}
-                  </div>
-                )}
+                      <h2 style={{ ...T.syne, fontSize: 24, fontWeight: 800, marginBottom: 12 }}>Build Your Growth Plan</h2>
+                      <p style={{ fontSize: 14, color: '#6B7A91', lineHeight: 1.6, marginBottom: 32 }}>
+                        We will generate a multi-channel growth strategy, content calendar, and SEO playbook tailored for: <br />
+                        <strong style={{ color: '#00F5A0' }}>"{problem.title}"</strong>
+                      </p>
+
+                      {loading ? (
+                        <div style={{ padding: '16px 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 14 }}>
+                            <Zap size={14} style={{ color: '#00F5A0', animation: 'pulse 1s ease-in-out infinite' }} />
+                            <span style={{ fontSize: 13, color: '#00F5A0', ...T.mono }}>Generating Strategy…</span>
+                          </div>
+                          <div style={{ height: 4, background: 'rgba(255,255,255,0.07)', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', background: 'linear-gradient(90deg, #00F5A0, #00D9E8)', borderRadius: 2, animation: 'growProgress 2s linear infinite' }} />
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleGenerate}
+                          style={{ ...T.btn, ...T.btnGreen, width: '100%', justifyContent: 'center', padding: '16px 24px', fontSize: 14 }}
+                        >
+                          <Zap size={18} />
+                          Generate Growth Strategy ⚡
+                        </button>
+                      )}
+
+                      {error && (
+                        <div style={{ marginTop: 20, padding: 12, background: 'rgba(255,107,53,0.1)', border: '1px solid rgba(255,107,53,0.2)', borderRadius: 6, color: '#FF6B35', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <AlertCircle size={15} /> {error}
+                        </div>
+                      )}
+
+                      {strategy && (
+                        <div style={{ marginTop: 32, textAlign: 'left' }}>
+                          <div style={{ ...T.label, marginBottom: 12 }}>Your Growth Strategy</div>
+                          <div style={{ ...T.card, background: 'rgba(0,245,160,0.03)', border: '1px solid rgba(0,245,160,0.15)', padding: 24 }}>
+                            <pre style={{ whiteSpace: 'pre-wrap', fontSize: 14, color: '#A0ADBF', lineHeight: 1.7, fontFamily: "'DM Sans', sans-serif" }}>
+                              {strategy}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* ── RESULTS STATE ── */}
               {!isFormView && activePlan && activePlanMeta && (
@@ -352,13 +354,28 @@ export default function GrowthEnginePage() {
                         </div>
                       )}
                     </div>
-                    <button
-                      onClick={() => { setShowForm(true); setError('') }}
-                      style={{ ...T.btn, ...T.btnOutline, flexShrink: 0 }}
-                    >
-                      <Plus size={14} />
-                      New Plan
-                    </button>
+                    <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+                      <button
+                        onClick={() => setShowAdvisor(true)}
+                        style={{
+                          ...T.btn,
+                          background: 'rgba(0,245,160,0.08)',
+                          color: '#00F5A0',
+                          border: '1px solid rgba(0,245,160,0.25)',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Sparkles size={14} />
+                        AI Growth Coach
+                      </button>
+                      <button
+                        onClick={() => { setShowForm(true); setError('') }}
+                        style={{ ...T.btn, ...T.btnOutline, flexShrink: 0 }}
+                      >
+                        <Plus size={14} />
+                        New Plan
+                      </button>
+                    </div>
                   </div>
 
                   {/* Tabs */}
@@ -610,11 +627,44 @@ export default function GrowthEnginePage() {
         </div>
       </div>
 
+      {showAdvisor && activePlanMeta && (
+        <div
+          onClick={() => setShowAdvisor(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            zIndex: 50,
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 560,
+              height: '100%',
+              animation: 'slideInRight 0.22s ease',
+            }}
+          >
+            <GrowthAdvisorPanel
+              planMeta={activePlanMeta}
+              problem={problem}
+              onClose={() => setShowAdvisor(false)}
+            />
+          </div>
+        </div>
+      )}
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
         select option { background: #0C1018; color: #E8EDF5; }
         @keyframes growProgress { from { width: 0% } to { width: 100% } }
         @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.4 } }
+        @keyframes slideInRight {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: #060A0F; }
         ::-webkit-scrollbar-thumb { background: rgba(0,245,160,0.25); border-radius: 2px; }

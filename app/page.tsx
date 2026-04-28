@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import {
   Zap, ArrowRight, Lightbulb, Code2, TrendingUp, DollarSign,
   Scale, BarChart3, CheckCircle, Star, ChevronRight,
-  Brain, Search, Megaphone, FileText
+  Brain, Megaphone, FileText
 } from 'lucide-react'
 
 const features = [
@@ -26,23 +26,7 @@ const agents = [
   { emoji: '💰', name: 'Finance Agent', role: 'Modeling & forecasting', color: 'var(--color-purple)' },
 ]
 
-const pricing = [
-  {
-    name: 'Starter', price: 29, color: 'var(--color-cyan)',
-    features: ['5 Idea Validations/mo', '50 Chat Messages/mo', '10 Agent Tasks/mo', 'Lean Canvas Export', 'Email Support'],
-    cta: 'Get Started',
-  },
-  {
-    name: 'Growth', price: 99, color: 'var(--color-green)', popular: true,
-    features: ['Unlimited Validations', '500 Chat Messages/mo', '100 Agent Tasks/mo', 'All 6 Modules', 'API Access', 'Priority Support'],
-    cta: 'Start Free Trial',
-  },
-  {
-    name: 'Enterprise', price: 499, color: 'var(--color-purple)',
-    features: ['Everything in Growth', 'Custom AI Agents', 'Dedicated Infrastructure', 'SSO & Security', 'SLA Guarantee', '24/7 Support'],
-    cta: 'Contact Sales',
-  },
-]
+
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
@@ -71,7 +55,7 @@ export default function LandingPage() {
           <span style={{ fontFamily: 'Syne', fontWeight: 800, fontSize: 20, color: 'var(--color-green)', letterSpacing: '0.08em' }}>AGENTIX</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-          {['Features', 'Agents', 'Pricing'].map(l => (
+          {['Features', 'Agents'].map(l => (
             <a key={l} href={`#${l.toLowerCase()}`} style={{ color: 'var(--text-muted)', fontSize: 14, textDecoration: 'none', transition: 'color 0.15s' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
@@ -80,7 +64,6 @@ export default function LandingPage() {
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <Link href="/login" className="btn btn-outline" style={{ padding: '8px 18px', fontSize: 13 }}>Login</Link>
-          <Link href="/signup" className="btn btn-primary" style={{ padding: '8px 18px', fontSize: 13 }}>Get Started <ArrowRight size={14} /></Link>
         </div>
       </nav>
 
@@ -115,11 +98,11 @@ export default function LandingPage() {
             From zero to funded — Agentix deploys specialized AI agents to validate ideas, build products, grow audiences, and close rounds.
           </p>
           <div className="fade-up fade-up-delay-3" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/signup" className="btn btn-primary" style={{ padding: '14px 32px', fontSize: 14 }}>
-              Start Building Free <ArrowRight size={16} />
+            <Link href="/signup?role=founder" className="btn btn-primary" style={{ padding: '14px 32px', fontSize: 14 }}>
+              Build Your Startup <ArrowRight size={16} />
             </Link>
-            <Link href="#features" className="btn btn-outline" style={{ padding: '14px 32px', fontSize: 14 }}>
-              See How It Works
+            <Link href="/signup?role=investor" className="btn btn-primary" style={{ padding: '14px 32px', fontSize: 14 }}>
+              Discover Opportunities
             </Link>
           </div>
         </div>
@@ -199,55 +182,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" style={{ padding: '100px 40px' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 60 }}>
-            <p style={{ fontFamily: 'Space Mono', fontSize: 12, color: 'var(--color-purple)', marginBottom: 12, letterSpacing: '0.08em' }}>PRICING</p>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 800 }}>Invest in your success</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 16, marginTop: 12 }}>All plans include a 14-day free trial. No credit card required.</p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: 20 }}>
-            {pricing.map((p) => (
-              <div key={p.name} className="card" style={{
-                position: 'relative', padding: '32px 28px',
-                borderColor: p.popular ? p.color + '50' : 'var(--border)',
-                boxShadow: p.popular ? `0 0 40px ${p.color}10` : 'none',
-              }}>
-                {p.popular && (
-                  <div style={{
-                    position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
-                    background: p.color, color: '#060A0F', padding: '3px 14px',
-                    fontFamily: 'Space Mono', fontSize: 11, fontWeight: 700, borderRadius: 4,
-                    whiteSpace: 'nowrap',
-                  }}>MOST POPULAR</div>
-                )}
-                <p style={{ fontFamily: 'Space Mono', fontSize: 11, color: p.color, marginBottom: 8, letterSpacing: '0.06em' }}>{p.name.toUpperCase()}</p>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 24 }}>
-                  <span style={{ fontFamily: 'Syne', fontSize: 48, fontWeight: 800, color: 'var(--text-primary)' }}>${p.price}</span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>/month</span>
-                </div>
-                <ul style={{ listStyle: 'none', marginBottom: 28 }}>
-                  {p.features.map(f => (
-                    <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontSize: 14, color: 'var(--text-muted)' }}>
-                      <CheckCircle size={14} style={{ color: p.color, flexShrink: 0 }} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/signup" className="btn" style={{
-                  width: '100%', justifyContent: 'center', fontSize: 13,
-                  background: p.popular ? p.color : 'transparent',
-                  color: p.popular ? '#060A0F' : p.color,
-                  border: `1px solid ${p.color}50`,
-                }}>
-                  {p.cta}
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* CTA Banner */}
       <section style={{ padding: '80px 40px', background: 'rgba(0,245,160,0.03)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', textAlign: 'center' }}>

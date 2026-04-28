@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
           type: 'investor_interest',
           title: `${investorProfile?.fullName || investor.name || 'An investor'} is interested`,
           message: message || 'Expressed interest in your startup.',
+          fromUserId: session.user.id,
           fromName: investorProfile?.fullName || investor.name,
           fromEmail: investor.email,
           firmName: investorProfile?.firmName,

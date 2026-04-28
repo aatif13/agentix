@@ -1,18 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { Zap, Eye, EyeOff, AlertCircle, CheckCircle, Building2, TrendingUp } from 'lucide-react'
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [role, setRole] = useState<'founder' | 'investor'>('founder')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPw, setShowPw] = useState(false)
+
+  useEffect(() => {
+    const r = searchParams?.get('role')
+    if (r === 'investor' || r === 'founder') setRole(r)
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -30,8 +30,6 @@ const navItems = [
   { href: '/dashboard/build-studio', label: 'Build Studio', icon: Code2 },
   { href: '/dashboard/growth', label: 'Growth Engine', icon: TrendingUp },
   { href: '/dashboard/growth/experiments', label: 'Experiments', icon: FlaskConical, parent: 'growth' },
-  { href: '/dashboard/growth/viral-hooks', label: 'Viral Hooks', icon: Zap, parent: 'growth' },
-  { href: '/dashboard/growth/outreach', label: 'Outreach', icon: Send, parent: 'growth' },
   { href: '/dashboard/growth/weekly-report', label: 'Weekly Report', icon: FileText, parent: 'growth' },
   { href: '/dashboard/chat', label: 'AI Chat', icon: MessageSquare },
   { href: '/dashboard/messages', label: 'Messages', icon: MessageSquare },
